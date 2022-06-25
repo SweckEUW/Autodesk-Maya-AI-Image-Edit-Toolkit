@@ -5,54 +5,38 @@ from PIL import Image
 import os
 import maya.app.general.createImageFormats as createImageFormats
 
-project_path = "C:/Users/Simon/Desktop/Projektarbeit/Autodesk-Maya-AI-Toolkit/neural_style_transfer/"
-style_img_path = [project_path+"style7.jpg"]
+media_path = "C:/Users/Simon/Desktop/Projektarbeit/Autodesk-Maya-AI-Toolkit/media/"
+style_img_path = [media_path+"style7.jpg"]
 
 def transfer_image(args):    
     
-    def load_image2(img_path):
+    def load_image(img_path):
         img = tf.io.read_file(img_path)
         img = tf.image.decode_image(img, channels=3)
         img = tf.image.convert_image_dtype(img, tf.float32)
         img = img[tf.newaxis, :]
         return img
-        
-    def load_image(path_to_img):
-        max_dim = 512
-        img = tf.io.read_file(path_to_img)
-        img = tf.image.decode_image(img, channels=3)
-        img = tf.image.convert_image_dtype(img, tf.float32)
-    
-        shape = tf.cast(tf.shape(img)[:-1], tf.float32)
-        long_dim = max(shape)
-        scale = max_dim / long_dim
-    
-        new_shape = tf.cast(shape * scale, tf.int32)
-    
-        img = tf.image.resize(img, new_shape)
-        img = img[tf.newaxis, :]
-        return img
     
     #Save current rendering to disk
     editor = 'renderView'
-    cmds.renderWindowEditor(editor, e=True, writeImage=project_path+"rendering.jpg")
+    cmds.renderWindowEditor(editor, e=True, writeImage=media_path+"rendering.jpg")
     
     #load neural net
     model = hub.load("https://tfhub.dev/google/magenta/arbitrary-image-stylization-v1-256/2")
     
-    if os.path.exists(project_path+"output.jpg"):
-        content_img = load_image(project_path+"output.jpg")
+    if os.path.exists(media_path+"output.jpg"):
+        content_img = load_image(media_path+"output.jpg")
     else:
-        content_img = load_image(project_path+"rendering.jpg")
+        content_img = load_image(media_path+"rendering.jpg")
         
     style_img = load_image(style_img_path[0])
     
     transfered_img = model(tf.constant(content_img), tf.constant(style_img))[0]
     
     im1 = Image.fromarray(np.uint8(np.squeeze(transfered_img)*255)).convert('RGB')
-    im1 = im1.save(project_path+"output.jpg")
+    im1 = im1.save(media_path+"output.jpg")
 
-    cmds.image("test123",image=project_path+"output.jpg", edit=True)
+    cmds.image("test123",image=media_path+"output.jpg", edit=True)
 
 def upscale_image(args):
     
@@ -67,33 +51,33 @@ def upscale_image(args):
     
     #Save current rendering to disk
     editor = 'renderView'
-    cmds.renderWindowEditor(editor, e=True, writeImage=project_path+"rendering.jpg")
+    cmds.renderWindowEditor(editor, e=True, writeImage=media_path+"rendering.jpg")
     
     #load neural net
     model = hub.load("https://tfhub.dev/captain-pool/esrgan-tf2/1")
     
-    if os.path.exists(project_path+"output.jpg"):
-        low_resolution_image = load_image(project_path+"output.jpg")
+    if os.path.exists(media_path+"output.jpg"):
+        low_resolution_image = load_image(media_path+"output.jpg")
     else:
-        low_resolution_image = load_image(project_path+"rendering.jpg")
+        low_resolution_image = load_image(media_path+"rendering.jpg")
 
     super_resolution_image = model(low_resolution_image)
 
     image = tf.squeeze(tf.cast(tf.clip_by_value(super_resolution_image, 0, 255), tf.uint8))
     image = Image.fromarray(image.numpy())
-    image.save(project_path+"output.jpg")    
+    image.save(media_path+"output.jpg")    
 
-    cmds.image("test123",image=project_path+"output.jpg", edit=True)
+    cmds.image("test123",image=media_path+"output.jpg", edit=True)
     
 def createUI():
     
     #delete old output
-    if os.path.exists(project_path+"output.jpg"):
-        os.remove(project_path+"output.jpg")
+    if os.path.exists(media_path+"output.jpg"):
+        os.remove(media_path+"output.jpg")
     
     #delte old rendering
-    if os.path.exists(project_path+"rendering.jpg"):
-        os.remove(project_path+"rendering.jpg")
+    if os.path.exists(media_path+"rendering.jpg"):
+        os.remove(media_path+"rendering.jpg")
         
     windowID = "myWindowID"
     
@@ -109,9 +93,9 @@ def createUI():
     editor = 'renderView'
     formatManager = createImageFormats.ImageFormats()
     formatManager.pushRenderGlobalsForDesc("JPEG")
-    cmds.renderWindowEditor(editor, e=True, writeImage=project_path+"rendering.jpg")
+    cmds.renderWindowEditor(editor, e=True, writeImage=media_path+"rendering.jpg")
     
-    cmds.image("test123",image=project_path+"rendering.jpg")
+    cmds.image("test123",image=media_path+"rendering.jpg")
     
     def searchForFiles(args):  
         global style_img_path  
