@@ -1,4 +1,4 @@
-# Autodesk-Maya-AI-Toolkit
+# Autodesk-Maya-AI-Image-Edit-Toolkit
 Artificial intelligence powered image editing tool for Look Development inside Autodesk Maya
 
 
