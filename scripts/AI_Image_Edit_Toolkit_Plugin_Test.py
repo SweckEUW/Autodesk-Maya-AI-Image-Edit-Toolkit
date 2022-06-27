@@ -1,3 +1,6 @@
+from unload_packages import unload_packages
+unload_packages(True,["extendRenderWindow","onRenderViewOpen_ScriptJob"])
+
 import maya.cmds as cmds
 
 if __name__ == "__main__":

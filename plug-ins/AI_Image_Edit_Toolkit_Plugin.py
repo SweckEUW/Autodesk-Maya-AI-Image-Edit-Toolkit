@@ -7,7 +7,8 @@ def maya_useNewAPI():
     pass
     
 def initializePlugin(plugin):
-    
+    print("AI_TOOLKIT : Loading Plugin")
+        
     vendor = "Simon Weck"
     version = "1.0.0"
     
@@ -15,7 +16,6 @@ def initializePlugin(plugin):
     
     listen_to_window_events()
     
-    print("AI_TOOLKIT : AI Image Edit Toolkit Plugin Loaded")
     
 def uninitializePlugin(plugin):
     pass
