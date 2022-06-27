@@ -22,26 +22,23 @@ def getRenderImage():
 def extendRenderWindowToolbar():
     renderWindow = getPyQtWindowByName("renderViewWindow")
     toolbar = renderWindow.findChild(QtWidgets.QLayout,"renderViewToolbar")
-
-    checkbox = QtWidgets.QCheckBox()
-    checkbox.setObjectName("NEW NEW NEW")
-    checkbox.setParent(toolbar)
-        
-    toolbar.setParent(None)
     
-    for x in toolbar.children():
+    for x in renderWindow.findChildren(QtWidgets.QWidget):
         print(x)
         
-    #for x in toolbar.findChildren(QtWidgets.QWidget):
-       #print(x)
-       
-    #for x in QtWidgets.QApplication.allWidgets():
-       # print(x.__class__.__name__)
-        #if x.__class__.__name__ == "QImage":
-            #print(x.objectName())
-            #print("found one")
-            #print(" ")
-
+    #Development code
+    oldMenuBar = renderWindow.findChild(QtWidgets.QWidget,"StyleTransferButton")
+    if oldMenuBar:
+        oldMenuBar.setParent(None)
+        
+    styleTransferButton = QtWidgets.QPushButton()
+    styleTransferButton.setIcon(QtGui.QIcon(QtGui.QPixmap("./media/icDocuments.svg")))
+    styleTransferButton.clicked.connect(printTest)
+    styleTransferButton.setObjectName("StyleTransferButton")
+    styleTransferButton.setToolTip('Transfer the style of a selected image to the rendering')
+    
+    toolbar.addWidget(styleTransferButton)
+    
 def printTest():
     print("Test")
     
@@ -49,6 +46,11 @@ def extendRenderWindowMenuBar():
     renderWindow = getPyQtWindowByName("renderViewWindow")
     menubar = renderWindow.findChild(QtWidgets.QMenuBar,"renderView")
     
+    #Development code
+    oldMenuBar = renderWindow.findChild(QtWidgets.QWidget,"ImageEditMenuBar")
+    if oldMenuBar:
+        oldMenuBar.setParent(None)
+        
     #Create MenuBar Item
     styleTransferOptionsAction = QtWidgets.QAction("Style Transfer Options",renderWindow) #QAction(QIcon('exit.png'), 'Exit', renderWindow)
     styleTransferOptionsAction.setShortcut('Ctrl+M')
@@ -56,12 +58,14 @@ def extendRenderWindowMenuBar():
     styleTransferOptionsAction.triggered.connect(printTest)
     
     #Create MenuBar
-    newMenu = menubar.addMenu("Test")
+    newMenu = menubar.addMenu("AI Image Edit")
+    newMenu.setObjectName("ImageEditMenuBar")
     newMenu.addAction(styleTransferOptionsAction)      
    
 
 if __name__ == "__main__":
     extendRenderWindowToolbar()
+    extendRenderWindowMenuBar()
 
 def deconstructRenderView():
     renderWindow = getPyQtWindowByName("renderViewWindow")
