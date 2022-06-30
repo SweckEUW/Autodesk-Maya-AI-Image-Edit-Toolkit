@@ -1,0 +1,7 @@
+scripts/tensorflow
+scripts/PIL
+scripts/numpy
+scripts/tensorflow_estimator
+scripts/tensorflow_hub
+scripts/torch
+scripts/torchvision
