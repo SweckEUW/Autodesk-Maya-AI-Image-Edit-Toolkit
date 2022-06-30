@@ -17,7 +17,7 @@ def getRenderImage():
     renderImageContainer = renderWindow.findChild(QtWidgets.QStackedWidget,"renderView")
     renderImage = renderImageContainer.findChild(QtWidgets.QWidget)
     #renderImageContainer.setStyleSheet("border: 2px solid red;")
-    return renderImage
+    return renderImageContainer
     
 def extendRenderWindowToolbar():
     renderWindow = getPyQtWindowByName("renderViewWindow")
@@ -39,6 +39,34 @@ def extendRenderWindowToolbar():
 def printTest():
     print("Test")
     
+def extendRenderWindowImage():
+    renderWindow = getPyQtWindowByName("renderViewWindow")
+    renderImageContainer = renderWindow.findChild(QtWidgets.QStackedWidget,"renderView")
+    parent = renderImageContainer.parent().parent().parent()
+    print(parent)
+    
+    containerContainer = QtWidgets.QStackedWidget()
+    containerContainer.setParent(parent)
+
+    containerContainer.setObjectName("TEST TEST TEST TEST TEST TEST TEST ")
+    
+    styleTransferButton = QtWidgets.QPushButton()
+    styleTransferButton.setIcon(QtGui.QIcon(QtGui.QPixmap("./media/icons/icDocuments.svg")))
+    styleTransferButton.clicked.connect(printTest)
+    styleTransferButton.setObjectName("TEST TEST TEST TEST TEST TEST TEST ")
+    styleTransferButton.setToolTip('Transfer the style of a selected image to the rendering')
+    renderImageContainer.addWidget(styleTransferButton)
+    
+    containerContainer.addWidget(renderImageContainer)
+    
+    #renderImage = renderImageContainer.findChild(QtWidgets.QWidget)
+    #renderImage.setParent(None)
+    
+    #deconstructRenderView()
+    for x in renderWindow.findChildren(QtWidgets.QWidget):
+        print(x)
+    
+    
 def extendRenderWindowMenuBar():
     renderWindow = getPyQtWindowByName("renderViewWindow")
     menubar = renderWindow.findChild(QtWidgets.QMenuBar,"renderView")
@@ -49,9 +77,9 @@ def extendRenderWindowMenuBar():
         oldMenuBar.setParent(None)
         
     #Create MenuBar Item
-    styleTransferOptionsAction = QtWidgets.QAction("Style Transfer Options",renderWindow) #QAction(QIcon('exit.png'), 'Exit', renderWindow)
+    styleTransferOptionsAction = QtWidgets.QAction("Options",renderWindow) #QAction(QIcon('exit.png'), 'Exit', renderWindow)
     styleTransferOptionsAction.setShortcut('Ctrl+M')
-    styleTransferOptionsAction.setStatusTip('Open Style Transfer Options')
+    styleTransferOptionsAction.setStatusTip('Options')
     styleTransferOptionsAction.triggered.connect(printTest)
     
     #Create MenuBar
@@ -61,8 +89,9 @@ def extendRenderWindowMenuBar():
    
 def extendRenderWindow():
     print("AI_TOOLKIT : Extending Render Window")
-    extendRenderWindowToolbar()
-    extendRenderWindowMenuBar()
+    #extendRenderWindowToolbar()
+    #extendRenderWindowMenuBar()
+    extendRenderWindowImage()
 
 if __name__ == "__main__":
     extendRenderWindow()
