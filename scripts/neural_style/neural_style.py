@@ -15,15 +15,15 @@ params = Params()
 def initParams():
     # Basic options
     params.content_image = "C:/Users/Simon/Desktop/Projektarbeit/Autodesk-Maya-AI-Toolkit/media/styles/rendering.jpg"
-    params.style_image = "C:/Users/Simon/Desktop/Projektarbeit/Autodesk-Maya-AI-Toolkit/media/styles/style6.jpg"
+    params.style_image = "C:/Users/Simon/Desktop/Projektarbeit/Autodesk-Maya-AI-Toolkit/media/styles/style7.jpg"
     params.output_image = "C:/Users/Simon/Desktop/Output/output.jpg"
     params.image_size = 512
     params.style_blend_weights = None
     
     # Optimization options
     params.gpu = 0
-    params.content_weight = 5e0
-    params.style_weight = 1e2
+    params.content_weight = 4
+    params.style_weight = 100
     params.normalize_weights = False
     params.normalize_gradients= False
     params.tv_weight = 1e-3
@@ -33,7 +33,7 @@ def initParams():
     params.optimizer = "lbfgs"
     params.learning_rate = 1e0
     params.lbfgs_num_correction = 100
-    
+   
     # Output options
     params.print_iter = 50
     params.save_iter = 100
