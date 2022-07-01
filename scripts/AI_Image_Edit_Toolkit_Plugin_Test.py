@@ -1,5 +1,5 @@
 from unload_packages import unload_packages
-unload_packages(True,["extendRenderWindow","onRenderViewOpen_ScriptJob"])
+unload_packages(True,["extendRenderWindow","onRenderViewOpen_ScriptJob","neural_style","optionWindow","collapsible_widget"])
 
 import maya.cmds as cmds
 

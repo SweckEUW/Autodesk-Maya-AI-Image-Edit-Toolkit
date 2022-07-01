@@ -1,9 +1,9 @@
-from PySide2 import QtCore
-from PySide2 import QtWidgets
+from PySide2 import QtCore, QtGui, QtWidgets
 from shiboken2 import wrapInstance
 import maya.OpenMayaUI as omui
 from neural_style import neural_style
 from collapsible_widget import CollapsibleWidget
+import os
 
 from unload_packages import unload_packages
 unload_packages(True,["collapsible_widget"])
@@ -25,94 +25,118 @@ class OptionWindow(QtWidgets.QDialog):
 
         self.create_widgets()
         self.create_layouts()
+        self.createMenuBar()
 
     def create_widgets(self):
         self.collapsible_a = CollapsibleWidget("Style Transfer")
-        for i in range(6):
-            self.collapsible_a.add_widget(QtWidgets.QPushButton("Button {0}".format(i)))
+        self.addWidgetsCollapsibleA()
             
         self.collapsible_b = CollapsibleWidget("Upscale")
         for i in range(6):
             self.collapsible_b.add_widget(QtWidgets.QPushButton("Button {0}".format(i)))
             
-        self.style_transfer_button = QtWidgets.QPushButton("Style Transfer")
-        self.style_transfer_button.clicked.connect(self.style_transfer)
-        
-        self.upscale_button = QtWidgets.QPushButton("Upscale")
-        self.upscale_button.clicked.connect(self.upscale)
-
-        self.ok_btn = QtWidgets.QPushButton("OK")
-        self.cancel_btn = QtWidgets.QPushButton("Cancel")
-
 
     def create_layouts(self):
         form_layout = QtWidgets.QFormLayout()
         form_layout.setSpacing(4)
-        form_layout.addRow(self.style_transfer_button)
-        form_layout.addRow(self.upscale_button)
         form_layout.addRow(self.collapsible_a)
         form_layout.addRow(self.collapsible_b)
 
-        button_layout = QtWidgets.QHBoxLayout()
-        button_layout.addStretch()
-        button_layout.addWidget(self.ok_btn)
-        button_layout.addWidget(self.cancel_btn)
-
-        main_layout = QtWidgets.QVBoxLayout()
-        main_layout.addLayout(form_layout)
-        # main_layout.addLayout(button_layout)
-        
         main_widget = QtWidgets.QWidget()
-        main_widget.setLayout(main_layout)
+        main_widget.setLayout(form_layout)
         
-        scrollArea = QtWidgets.QScrollArea()
+        scrollArea = QtWidgets.QScrollArea(self)
         scrollArea.setWidgetResizable(True)
-       
-        scrollArea.setObjectName("ai_scrollArea");
+        scrollArea.setObjectName("ai_scrollArea")
         scrollArea.setStyleSheet('#ai_scrollArea { border: none; }')
-       
         scrollArea.setWidget(main_widget)
         
-        main_layout2 = QtWidgets.QVBoxLayout(self)
-        main_layout2.setContentsMargins(0,0,0,0)
-        main_layout2.addWidget(scrollArea)
-
-    def style_transfer(self):
-        neural_style.main()
-       
-    def upscale(self):
-        pass
-    # def upscale_image(self):
-    
-    #     def load_image(image_path):
-    #         hr_image = tf.image.decode_image(tf.io.read_file(image_path))
-    #         if hr_image.shape[-1] == 4:
-    #             hr_image = hr_image[...,:-1]
-    #         hr_size = (tf.convert_to_tensor(hr_image.shape[:-1]) // 4) * 4
-    #         hr_image = tf.image.crop_to_bounding_box(hr_image, 0, 0, hr_size[0], hr_size[1])
-    #         hr_image = tf.cast(hr_image, tf.float32)
-    #         return tf.expand_dims(hr_image, 0)
+        main_layout = QtWidgets.QVBoxLayout(self)
+        main_layout.setContentsMargins(0,15,0,0)
+        main_layout.addWidget(scrollArea)
         
-    #     #Save current rendering to disk
-    #     editor = 'renderView'
-    #     cmds.renderWindowEditor(editor, e=True, writeImage=self.media_path+"rendering.jpg")
+    def addWidgetsCollapsibleA(self):
+        main_layout = QtWidgets.QGridLayout()
+        main_layout.setHorizontalSpacing(20)
+        self.collapsible_a.add_layout(main_layout)
         
-    #     #load neural net
-    #     model = hub.load("https://tfhub.dev/captain-pool/esrgan-tf2/1")
+        def createHBoxWidget(text):
+            label = QtWidgets.QLabel(text)
+            hbox = QtWidgets.QHBoxLayout()
+            main_layout.addWidget(label,main_layout.rowCount(),0)
+            main_layout.addLayout(hbox,main_layout.rowCount()-1,1)
+            return hbox
+            
+        # Itterations
+        hbox1 = createHBoxWidget("Itterations")
+        self.itterations_lineedit = QtWidgets.QLineEdit("1000")
+        self.itterations_lineedit.setStyleSheet('background-color: rgb(43,43,43);')
+        self.itterations_lineedit.setValidator(QtGui.QIntValidator())
+        hbox1.addWidget(self.itterations_lineedit)
+            
+        # Keep original colors
+        hbox2 = createHBoxWidget("Keep original colors")
+        self.keepcolor_checkbox = QtWidgets.QCheckBox()
+        #self.keepcolor_checkbox.setStyleSheet('QCheckBox::indicator {background-color: rgb(43,43,43); }"')
+        hbox2.addWidget(self.keepcolor_checkbox)
+
+        # Style weight
+        hbox3 = createHBoxWidget("Style weight")
+        self.styleweight_lineedit = QtWidgets.QLineEdit("100")
+        self.styleweight_lineedit.setStyleSheet('background-color: rgb(43,43,43);')
+        hbox3.addWidget(self.styleweight_lineedit)
         
-    #     if os.path.exists(self.media_path+"output.jpg"):
-    #         low_resolution_image = load_image(self.media_path+"output.jpg")
-    #     else:
-    #         low_resolution_image = load_image(self.media_path+"rendering.jpg")
-
-    #     super_resolution_image = model(low_resolution_image)
-
-    #     image = tf.squeeze(tf.cast(tf.clip_by_value(super_resolution_image, 0, 255), tf.uint8))
-    #     image = Image.fromarray(image.numpy())
-    #     image.save(self.media_path+"output.jpg")    
-
-    #     cmds.image("test123",image=self.media_path+"output.jpg", edit=True)
+        # Content weight
+        hbox4 = createHBoxWidget("Content weight")
+        self.contentweight_lineedit = QtWidgets.QLineEdit("4")
+        self.contentweight_lineedit.setStyleSheet('background-color: rgb(43,43,43);')
+        hbox4.addWidget(self.contentweight_lineedit)
+        
+        # Style scale
+        hbox5 = createHBoxWidget("Style scale")
+        self.stylescale_lineedit = QtWidgets.QLineEdit("1")
+        self.stylescale_lineedit.setValidator(QtGui.QIntValidator())
+        self.stylescale_lineedit.setStyleSheet('background-color: rgb(43,43,43);')
+        hbox5.addWidget(self.stylescale_lineedit)
+                
+        # Output Path
+        # hbox2 = createHBoxWidget("Select File")
+        # self.output_path_lineedit = QtWidgets.QLineEdit("C:/Users/Simon/Desktop/Output")
+        # hbox2.addWidget(self.output_path_lineedit)
+        # select_file_button = QtWidgets.QPushButton()
+        # select_file_button.setIcon(QtGui.QIcon(":fileOpen.png"))
+        # select_file_button.clicked.connect(self.select_directory)
+        # hbox2.addWidget(select_file_button)
+        # self.collapsible_a.add_layout(hbox2)
+        
+        
+    def select_directory(self):
+        output_path, selected_filter = QtWidgets.QFileDialog.getOpenFileName(self,"Select File", os.getcwd(), 'All Files(*.*)')
+        
+        #output_path = cmds.fileDialog2(fileFilter="All Files (*.*)", dialogStyle=2, fileMode=1, cap='Open Image')
+        if output_path:
+            self.output_path_lineedit.setText(output_path)
+        
+    def createMenuBar(self):
+        mainMenu = QtWidgets.QMenuBar(self)
+        
+        test = QtWidgets.QAction("Test",self) #QAction(QIcon('exit.png'), 'Exit', renderWindow)
+        test.setShortcut('Ctrl+M')
+        test.setStatusTip('Options')
+        test.triggered.connect(lambda x: print("Test"))
+        
+        editMenu = mainMenu.addMenu("Edit")
+        editMenu.addAction(test)     
+        
+        presetsMenu = mainMenu.addMenu("Presets")
+        
 
 if __name__ == "__main__":
-    d = OptionWindow()
-    d.show()
+    try:
+        option_window.close() #pyling: disable=E0601
+        option_window.deleteLater()
+    except:
+        pass
+    
+    option_window = OptionWindow()
+    option_window.show()
