@@ -1,6 +1,15 @@
 from PySide2 import QtCore, QtWidgets, QtGui
 from shiboken2 import wrapInstance
 import maya.OpenMayaUI as mui
+from neural_style import neural_style
+from optionWindow import OptionWindow
+import maya.cmds as cmds
+
+
+option_window = None
+extended_renderview_menubar = None
+extended_renderview_image = None
+extended_renderview_toolbar = None
 
 def getPyQtWindowByName(windowName):
     ptr = mui.MQtUtil.findWindow(windowName)
@@ -12,134 +21,173 @@ def maya_main_window():
     main_window_ptr = mui.MQtUtil.mainWindow()
     return wrapInstance(int(main_window_ptr),QtWidgets.QWidget)
 
-def getRenderImage():
-    renderWindow = getPyQtWindowByName("renderViewWindow")
-    renderImageContainer = renderWindow.findChild(QtWidgets.QStackedWidget,"renderView")
-    renderImage = renderImageContainer.findChild(QtWidgets.QWidget)
-    #renderImageContainer.setStyleSheet("border: 2px solid red;")
-    return renderImageContainer
-    
-def extendRenderWindowToolbar():
-    renderWindow = getPyQtWindowByName("renderViewWindow")
-    toolbar = renderWindow.findChild(QtWidgets.QLayout,"renderViewToolbar")
-      
-    #Development code
-    oldMenuBar = renderWindow.findChild(QtWidgets.QWidget,"StyleTransferButton")
-    if oldMenuBar:
-        oldMenuBar.setParent(None)
-        
-    styleTransferButton = QtWidgets.QPushButton()
-    styleTransferButton.setIcon(QtGui.QIcon(QtGui.QPixmap("./media/icons/icDocuments.svg")))
-    styleTransferButton.clicked.connect(printTest)
-    styleTransferButton.setObjectName("StyleTransferButton")
-    styleTransferButton.setToolTip('Transfer the style of a selected image to the rendering')
-    
-    toolbar.addWidget(styleTransferButton)
-    
-def printTest():
-    print("Test")
-    
-def extendRenderWindowImage():
-    renderWindow = getPyQtWindowByName("renderViewWindow")
-    renderImageContainer = renderWindow.findChild(QtWidgets.QStackedWidget,"renderView")
-    parent = renderImageContainer.parent().parent().parent()
-    print(parent)
-    
-    containerContainer = QtWidgets.QStackedWidget()
-    containerContainer.setParent(parent)
+def style_transfer():
+    neural_style.main()
+    extendRenderWindowImage()
+    extended_renderview_image.update_image("C:/Users/Simon/Desktop/Output/output.jpg")
 
-    containerContainer.setObjectName("TEST TEST TEST TEST TEST TEST TEST ")
-    
-    styleTransferButton = QtWidgets.QPushButton()
-    styleTransferButton.setIcon(QtGui.QIcon(QtGui.QPixmap("./media/icons/icDocuments.svg")))
-    styleTransferButton.clicked.connect(printTest)
-    styleTransferButton.setObjectName("TEST TEST TEST TEST TEST TEST TEST ")
-    styleTransferButton.setToolTip('Transfer the style of a selected image to the rendering')
-    renderImageContainer.addWidget(styleTransferButton)
-    
-    containerContainer.addWidget(renderImageContainer)
-    
-    #renderImage = renderImageContainer.findChild(QtWidgets.QWidget)
-    #renderImage.setParent(None)
-    
-    #deconstructRenderView()
-    for x in renderWindow.findChildren(QtWidgets.QWidget):
-        print(x)
-    
-    
-def extendRenderWindowMenuBar():
-    renderWindow = getPyQtWindowByName("renderViewWindow")
-    menubar = renderWindow.findChild(QtWidgets.QMenuBar,"renderView")
-    
-    #Development code
-    oldMenuBar = renderWindow.findChild(QtWidgets.QWidget,"ImageEditMenuBar")
-    if oldMenuBar:
-        oldMenuBar.setParent(None)
+def openOptionsWindow():
+    global option_window
+    try:
+        option_window.close() #pyling: disable=E0601
+        option_window.deleteLater()
+    except:
+        pass 
+
+    option_window = OptionWindow()
+    option_window.show()
+
+def super_resolution():
+    print("Test")
+
+class ExtendedRenderViewToolbar(QtWidgets.QWidget):
+    def __init__(self):
+        renderWindow = getPyQtWindowByName("renderViewWindow")
+        super(ExtendedRenderViewToolbar, self).__init__(renderWindow)
         
-    #Create MenuBar Item
-    styleTransferOptionsAction = QtWidgets.QAction("Options",renderWindow) #QAction(QIcon('exit.png'), 'Exit', renderWindow)
-    styleTransferOptionsAction.setShortcut('Ctrl+M')
-    styleTransferOptionsAction.setStatusTip('Options')
-    styleTransferOptionsAction.triggered.connect(printTest)
+        self.setObjectName("ExtendedRenderViewToolbar")
+
+        toolbar = renderWindow.findChild(QtWidgets.QLayout,"renderViewToolbar")
+        toolbar.addWidget(self)
+
+        self.create_widgets()
+        self.cerate_layout()
+
+    def create_widgets(self):
+        # Neural style transfer
+        self.styleTransferButton = QtWidgets.QPushButton()
+        self.styleTransferButton.setIcon(QtGui.QIcon(QtGui.QPixmap("./media/icons/style_transfer.svg")))
+        self.styleTransferButton.setToolTip('Run Neural style transfer')
+        self.styleTransferButton.clicked.connect(style_transfer)
+        
+        # Image Super-Resolution
+        self.superResolutionButton = QtWidgets.QPushButton()
+        self.superResolutionButton.setIcon(QtGui.QIcon(QtGui.QPixmap("./media/icons/image_super_resolution.svg")))
+        self.superResolutionButton.setToolTip('Run Image Super-Resolution')
+        self.superResolutionButton.clicked.connect(super_resolution)
+
+        # Options
+        self.openOptionsWindowButton = QtWidgets.QPushButton()
+        self.openOptionsWindowButton.setIcon(QtGui.QIcon(QtGui.QPixmap("./media/icons/settings.svg")))
+        self.openOptionsWindowButton.setToolTip('Open AI Image Edit Options')
+        self.openOptionsWindowButton.clicked.connect(openOptionsWindow)
+
+    def cerate_layout(self):
+        main_layout = QtWidgets.QHBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(4)
+        main_layout.addWidget(self.openOptionsWindowButton)
+        main_layout.addWidget(self.styleTransferButton)
+        main_layout.addWidget(self.superResolutionButton)
+
+class ExtendedRenderViewMenuBar(QtWidgets.QMenu):
+    def __init__(self):
+        renderWindow = getPyQtWindowByName("renderViewWindow")
+        super(ExtendedRenderViewMenuBar, self).__init__("AI Image Edit",renderWindow)
+
+        self.setObjectName("ExtendedRenderViewMenuBar")
+
+        self.addActions()
+
+        # Add this QMenu to Render View MenuBar
+        menubar = renderWindow.findChild(QtWidgets.QMenuBar,"renderView")
+        menubar.addMenu(self)
+
+    def addActions(self):
+        # Options
+        openOptionsAction = QtWidgets.QAction("Options",self) #QAction(QIcon('exit.png'), 'Exit', renderWindow)
+        openOptionsAction.setShortcut('Ctrl+M')
+        openOptionsAction.setStatusTip('Options')
+        openOptionsAction.triggered.connect(openOptionsWindow)
+        self.addAction(openOptionsAction)   
+
+        # Style Transfer
+        styleTransferAction = QtWidgets.QAction("Run Style Transfer",self)
+        styleTransferAction.triggered.connect(style_transfer)
+        self.addAction(styleTransferAction)   
+
+        # Image Super-Resolution
+        superResolutionAction = QtWidgets.QAction("Run Image Super-Resolution",self) 
+        superResolutionAction.triggered.connect(super_resolution)
+        self.addAction(superResolutionAction)   
+
+class ExtendedRenderViewImage(QtWidgets.QWidget):
+    def __init__(self):
+        renderWindow = getPyQtWindowByName("renderViewWindow")
+        renderViewImageContainer = renderWindow.findChild(QtWidgets.QStackedWidget,"renderView")
+        super(ExtendedRenderViewImage, self).__init__(renderViewImageContainer)
+
+        self.setObjectName("ExtendedRenderViewImage")
+
+        self.create_widgets()
+        self.cerate_layout()
     
-    #Create MenuBar
-    newMenu = menubar.addMenu("AI Image Edit")
-    newMenu.setObjectName("ImageEditMenuBar")
-    newMenu.addAction(styleTransferOptionsAction)      
-   
+    def create_image(self):
+        image = QtGui.QImage("C:/Users/Simon/Desktop/Output/Output.jpg")
+        pixmap = QtGui.QPixmap()
+        pixmap.convertFromImage(image)
+
+        self.image_widget = QtWidgets.QLabel("")
+        self.image_widget.setAlignment(QtCore.Qt.AlignCenter)
+        self.image_widget.setPixmap(pixmap)
+        self.image_widget.setScaledContents(False)
+
+    def create_widgets(self):
+        self.create_image()
+
+    def cerate_layout(self):
+        main_layout = QtWidgets.QHBoxLayout(self)
+        main_layout.addWidget(self.image_widget)
+        
+    def update_image(self, url):
+        image = QtGui.QImage(url)
+        pixmap = QtGui.QPixmap()
+        pixmap.convertFromImage(image)
+        self.image_widget.setPixmap(pixmap)
+         
+    def eventFilter(self, widget, event):
+        # TODO: overwrite resize event to scale image down
+        pass
+
+    def paintEvent(self, paint_event):
+        parent = self.parentWidget()
+        self.setGeometry(parent.geometry())
+        painter = QtGui.QPainter(self)
+        fill_color = QtGui.QColor(44,44,44)
+        painter.fillRect(0, 0, self.width(), self.height(), fill_color)
+
+def extendRenderWindowMenuBar():
+    oldMenu = getPyQtWindowByName("renderViewWindow").findChild(QtWidgets.QMenu,"ExtendedRenderViewMenuBar")
+    if(oldMenu):
+        oldMenu.setParent(None)
+
+    global extended_renderview_menubar
+    extended_renderview_menubar = ExtendedRenderViewMenuBar()
+    extended_renderview_menubar.show()
+
+def extendRenderWindowImage():
+    oldImage = getPyQtWindowByName("renderViewWindow").findChild(QtWidgets.QWidget,"ExtendedRenderViewImage")
+    if(oldImage):
+        oldImage.setParent(None)
+
+    global extended_renderview_image
+    extended_renderview_image = ExtendedRenderViewImage()
+    extended_renderview_image.show()
+
+def extendRenderWindowToolbar():
+    oldToolbar = getPyQtWindowByName("renderViewWindow").findChild(QtWidgets.QWidget,"ExtendedRenderViewToolbar")
+    if(oldToolbar):
+        oldToolbar.setParent(None)
+
+    global extended_renderview_toolbar
+    extended_renderview_toolbar = ExtendedRenderViewToolbar()
+    extended_renderview_toolbar.show()
+
 def extendRenderWindow():
     print("AI_TOOLKIT : Extending Render Window")
-    #extendRenderWindowToolbar()
-    #extendRenderWindowMenuBar()
-    extendRenderWindowImage()
+    extendRenderWindowToolbar()
+    extendRenderWindowMenuBar()
+    #extendRenderWindowImage()
 
 if __name__ == "__main__":
     extendRenderWindow()
-
-def deconstructRenderView():
-    renderWindow = getPyQtWindowByName("renderViewWindow")
-    renderWindow.findChild(QtWidgets.QMenuBar,"renderView").setParent(None)
-    renderWindow.findChild(QtWidgets.QWidget,"renderViewToolbar").setParent(None)
-    renderWindow.findChild(QtWidgets.QWidget,"renderViewrenderInfoItem").setParent(None)
-    renderWindow.findChild(QtWidgets.QWidget,"renderViewpopupDisplayMenu").setParent(None)
-    renderWindow.findChild(QtWidgets.QWidget,"renderViewpopupresolutionItem").setParent(None)
-    renderWindow.findChild(QtWidgets.QWidget,"renderViewpopuprenderUsingItem").setParent(None)
-    renderWindow.findChild(QtWidgets.QWidget,"renderViewpopupOptionsMenu").setParent(None)
-    renderWindow.findChild(QtWidgets.QWidget,"renderViewpopupiprUpdateOptionsItem").setParent(None)
-    renderWindow.findChild(QtWidgets.QWidget,"renderViewpopupiprRenderItem").setParent(None)
-    renderWindow.findChild(QtWidgets.QWidget,"renderViewpopupIprMenu").setParent(None)
-    renderWindow.findChild(QtWidgets.QWidget,"renderViewpopuprenderSnapshotItem").setParent(None)
-    renderWindow.findChild(QtWidgets.QWidget,"renderViewpopuprenderRenderItem").setParent(None)
-    renderWindow.findChild(QtWidgets.QWidget,"renderViewpopupRenderMenu").setParent(None)
-    renderWindow.findChild(QtWidgets.QWidget,"renderViewpopupViewMenu").setParent(None)
-    renderWindow.findChild(QtWidgets.QWidget,"renderViewpopuploadPassFileItem").setParent(None)
-    renderWindow.findChild(QtWidgets.QWidget,"renderViewpopupFileMenu").setParent(None)
-    renderWindow.findChild(QtWidgets.QWidget,"renderViewpopupMenu").setParent(None)
-    renderWindow.findChild(QtWidgets.QWidget,"iprMemEstText").setParent(None)
-    renderWindow.findChild(QtWidgets.QWidget,"pauseIprButton").setParent(None)
-    renderWindow.findChild(QtWidgets.QWidget,"closeIprButton").setParent(None)
-    renderWindow.findChild(QtWidgets.QWidget,"scrollBar").setParent(None)
-    renderWindow.findChild(QtWidgets.QWidget).setParent(None)
-    renderWindow.findChild(QtWidgets.QMenu).setParent(None)
-    renderWindow.findChild(QtWidgets.QRubberBand).setParent(None)
-    renderWindow.findChild(QtWidgets.QRubberBand).setParent(None)
-    #renderWindow.findChild(QtWidgets.QTabBar).setParent(None) #Causes Crashes
-    #renderWindow.findChild(QtWidgets.QWidget,"qt_splithandle_mayaLayoutInternalWidget").setParent(None) #Causes Error
-
-    for x in renderWindow.findChildren(QtWidgets.QWidget):
-        print(x)
-
-    # Render Image hirarchy
-    #--> Widget: <Object name not set>
-    #--> Parent: renderView
-    #--> Parent: editorForm
-    #--> Parent: renderViewForm
-    #--> Parent: renderView
-    #--> Parent: renderViewWindow
-    #--> Parent: qt_tabwidget_stackedwidget
-    #--> Parent: mayaLayoutInternalWidget
-    #--> Parent: mayaLayoutInternalWidget
-    #--> Parent: mayaLayoutInternalWidget
-    #--> Parent: mayaLayoutInternalWidget
-    #--> Parent: workspacePanel1
-    #--> Parent: MayaWindow 
