@@ -5,7 +5,10 @@ import torch.nn as nn
 import torch.optim as optim
 import torchvision.transforms as transforms
 from PIL import Image
+import gc
+
 from neural_style import CaffeLoader
+from optionWindow_utils import getOptions
 
 class Params(object):
     pass  
@@ -13,21 +16,26 @@ class Params(object):
 params = Params()
 
 def initParams():
+    options = getOptions()["style_transfer"]
+    
     # Basic options
-    params.content_image = "C:/Users/Simon/Desktop/Projektarbeit/Autodesk-Maya-AI-Toolkit/media/styles/rendering.jpg"
-    params.style_image = "C:/Users/Simon/Desktop/Projektarbeit/Autodesk-Maya-AI-Toolkit/media/styles/style7.jpg"
+    params.content_image = options["content_image"]
+    params.style_image = options["style_images"]
     params.output_image = "C:/Users/Simon/Desktop/Output/output.jpg"
-    params.image_size = 512
-    params.style_blend_weights = None
+    params.image_size = 600
+    if  options["style_blend_weights"] == "None":
+        params.style_blend_weights = None
+    else:
+        params.style_blend_weights = options["style_blend_weights"]
     
     # Optimization options
     params.gpu = 0
-    params.content_weight = 4
-    params.style_weight = 100
+    params.content_weight = float(options["content_weight"])
+    params.style_weight = float(options["style_weight"])
     params.normalize_weights = False
     params.normalize_gradients= False
     params.tv_weight = 1e-3
-    params.num_iterations = 100
+    params.num_iterations = int(options["itterations"])
     params.init = "random"
     params.init_image = None
     params.optimizer = "lbfgs"
@@ -39,8 +47,7 @@ def initParams():
     params.save_iter = 100
     
     # Other options
-    params.style_scale = 1.0
-    params.original_colors = 0
+    params.style_scale = float(options["style_scale"])
     params.pooling = "max"
     params.model_file = "C:/Users/Simon/Desktop/Projektarbeit/Autodesk-Maya-AI-Toolkit/scripts/neural_style/models/vgg19-d01eb7cb.pth"
     params.disable_check = False
@@ -49,11 +56,19 @@ def initParams():
     params.content_layers= "relu4_2"
     params.style_layers = "relu1_1,relu2_1,relu3_1,relu4_1,relu5_1"
     params.multidevice_strategy = "4,7,29"
+
+    if options["original_colors"] == "True":
+        params.original_colors = 1
+    else:
+        params.original_colors = 0
     
     Image.MAX_IMAGE_PIXELS = 1000000000 # Support gigapixel images
 
 
 def main():
+    gc.collect()
+    torch.cuda.empty_cache()
+
     initParams()
     
     dtype, multidevice, backward_device = setup_gpu()
@@ -260,7 +275,10 @@ def main():
 
     optimizer, loopVal = setup_optimizer(img)
     while num_calls[0] <= loopVal:
-         optimizer.step(feval)
+        optimizer.step(feval)
+
+    gc.collect()
+    torch.cuda.empty_cache()
 
 
 # Configure the optimizer
