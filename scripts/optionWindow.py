@@ -1,27 +1,28 @@
-from PySide2 import QtCore, QtGui, QtWidgets
+from PySide2 import QtGui, QtWidgets, QtCore
 from shiboken2 import wrapInstance
 import maya.OpenMayaUI as omui
-from neural_style import neural_style
-from collapsible_widget import CollapsibleWidget
-import os
+import webbrowser
 
+from collapsible_widget import CollapsibleWidget
+from optionWindow_utils import updateOptions, getOptions
 from unload_packages import unload_packages
-unload_packages(True,["collapsible_widget"])
+
 
 def maya_main_window():
     main_window_ptr = omui.MQtUtil.mainWindow()
     return wrapInstance(int(main_window_ptr), QtWidgets.QWidget)
 
+
+option_window = None
 class OptionWindow(QtWidgets.QDialog):
 
     def __init__(self, parent=maya_main_window()):
         super(OptionWindow, self).__init__(parent)
 
-        self.media_path = "C:/Users/Simon/Desktop/Projektarbeit/Autodesk-Maya-AI-Toolkit/media/"
-        self.style_img_path = [self.media_path+"style7.jpg"]
-
         self.setWindowTitle("Option Window")
-        self.resize(400,600)
+        self.resize(500,600)
+
+        self.optionsJson = getOptions()
 
         self.create_widgets()
         self.create_layouts()
@@ -30,10 +31,9 @@ class OptionWindow(QtWidgets.QDialog):
     def create_widgets(self):
         self.collapsible_a = CollapsibleWidget("Style Transfer")
         self.addWidgetsCollapsibleA()
-            
+
         self.collapsible_b = CollapsibleWidget("Upscale")
-        for i in range(6):
-            self.collapsible_b.add_widget(QtWidgets.QPushButton("Button {0}".format(i)))
+        self.addWidgetsCollapsibleB()
             
 
     def create_layouts(self):
@@ -55,88 +55,282 @@ class OptionWindow(QtWidgets.QDialog):
         main_layout.setContentsMargins(0,15,0,0)
         main_layout.addWidget(scrollArea)
         
+    def addWidgetsCollapsibleB(self):
+        main_layout = QtWidgets.QGridLayout()
+        main_layout.setHorizontalSpacing(20)
+        self.collapsible_b.add_layout(main_layout)
+
+        hbox = QtWidgets.QHBoxLayout()
+
+        r0 = QtWidgets.QRadioButton("SRGAN")
+        r0.setChecked(self.optionsJson["image_super_resolution"]["model"] == "SRGAN")
+        r1 = QtWidgets.QRadioButton("EDSR")
+        r1.setChecked(self.optionsJson["image_super_resolution"]["model"] == "EDSR")
+        r2 = QtWidgets.QRadioButton("WDSR")
+        r2.setChecked(self.optionsJson["image_super_resolution"]["model"] == "WDSR")
+
+        hbox.addWidget(r0) 
+        hbox.addWidget(r1)
+        hbox.addWidget(r2)
+
+        number_group = QtWidgets.QButtonGroup()
+        number_group.addButton(r0)
+        number_group.addButton(r1)
+        number_group.addButton(r2)
+        number_group.buttonClicked.connect(lambda: updateOptions("image_super_resolution","model",number_group.checkedButton().text()))
+
+        label = QtWidgets.QLabel("Model")
+        main_layout.addWidget(label,0,0)
+        main_layout.addLayout(hbox,0,1)
+
     def addWidgetsCollapsibleA(self):
         main_layout = QtWidgets.QGridLayout()
         main_layout.setHorizontalSpacing(20)
         self.collapsible_a.add_layout(main_layout)
-        
-        def createHBoxWidget(text):
+
+        def createHBoxWidget(text,widgets):
             label = QtWidgets.QLabel(text)
             hbox = QtWidgets.QHBoxLayout()
             main_layout.addWidget(label,main_layout.rowCount(),0)
             main_layout.addLayout(hbox,main_layout.rowCount()-1,1)
+            for widget in widgets:
+                hbox.addWidget(widget)
             return hbox
-            
+        
+        style_images = OptionWindowStyleImageSelection()
+        createHBoxWidget("Style Images",[style_images])
+
+        QSS = """
+            QSlider::groove:horizontal {
+                border-radius: 1px;
+                height: 5px;
+                margin: 0px;
+                background-color: rgb(43,43,43);
+            }
+            QSlider::groove:horizontal:hover {
+                background-color: rgb(63,63,63);
+            }
+            QSlider::handle:horizontal {
+                background-color: rgb(189,189,189);
+                border: none;
+                height: 20px;
+                width: 8px;
+                margin: -20px 0;
+                border-radius: 50px;
+            }
+            QSlider::handle:horizontal:hover {
+                background-color: rgb(200,200,200);
+            }
+            QSlider::handle:horizontal:pressed {
+                background-color: rgb(170, 170, 170);
+            }
+            QLineEdit{
+                background-color: rgb(43,43,43);
+            }
+        """
+        self.setStyleSheet(QSS)
+
         # Itterations
-        hbox1 = createHBoxWidget("Itterations")
-        self.itterations_lineedit = QtWidgets.QLineEdit("1000")
-        self.itterations_lineedit.setStyleSheet('background-color: rgb(43,43,43);')
-        self.itterations_lineedit.setValidator(QtGui.QIntValidator())
-        hbox1.addWidget(self.itterations_lineedit)
+        itterations_label = QtWidgets.QLabel(str(self.optionsJson["style_transfer"]["itterations"]))
+        itterations_label.setMinimumWidth(25)
+        itterations_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        itterations_slider.setMinimum(1)
+        itterations_slider.setMaximum(1500)
+        itterations_slider.setValue(int(self.optionsJson["style_transfer"]["itterations"]))
+        itterations_slider.setTickPosition(QtWidgets.QSlider.NoTicks)
+        itterations_slider.valueChanged.connect(lambda: (
+            updateOptions("style_transfer","itterations",itterations_slider.value()),
+            itterations_label.setText(str(itterations_slider.value()))
+        ))
+        createHBoxWidget("Itterations",[itterations_label,itterations_slider])
             
         # Keep original colors
-        hbox2 = createHBoxWidget("Keep original colors")
-        self.keepcolor_checkbox = QtWidgets.QCheckBox()
-        #self.keepcolor_checkbox.setStyleSheet('QCheckBox::indicator {background-color: rgb(43,43,43); }"')
-        hbox2.addWidget(self.keepcolor_checkbox)
+        keepcolor_checkbox = QtWidgets.QCheckBox()
+        keepcolor_checkbox.setChecked(self.optionsJson["style_transfer"]["original_colors"] == "True")
+        keepcolor_checkbox.toggled.connect(lambda: ( 
+            updateOptions("style_transfer","original_colors",str(keepcolor_checkbox.isChecked()))
+        ))
+        createHBoxWidget("Keep original colors",[keepcolor_checkbox])
 
         # Style weight
-        hbox3 = createHBoxWidget("Style weight")
-        self.styleweight_lineedit = QtWidgets.QLineEdit("100")
-        self.styleweight_lineedit.setStyleSheet('background-color: rgb(43,43,43);')
-        hbox3.addWidget(self.styleweight_lineedit)
+        styleweight_label = QtWidgets.QLabel(str(self.optionsJson["style_transfer"]["style_weight"]))
+        styleweight_label.setMinimumWidth(25)
+        styleweight_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        styleweight_slider.setMinimum(1)
+        styleweight_slider.setMaximum(400)
+        styleweight_slider.setValue(int(self.optionsJson["style_transfer"]["style_weight"]))
+        styleweight_slider.setTickPosition(QtWidgets.QSlider.NoTicks)
+        styleweight_slider.valueChanged.connect(lambda: (
+            updateOptions("style_transfer","style_weight",styleweight_slider.value()),
+            styleweight_label.setText(str(styleweight_slider.value()))
+        ))
+        createHBoxWidget("Style weight",[styleweight_label,styleweight_slider])
         
         # Content weight
-        hbox4 = createHBoxWidget("Content weight")
-        self.contentweight_lineedit = QtWidgets.QLineEdit("4")
-        self.contentweight_lineedit.setStyleSheet('background-color: rgb(43,43,43);')
-        hbox4.addWidget(self.contentweight_lineedit)
+        contentweight_label = QtWidgets.QLabel(str(self.optionsJson["style_transfer"]["content_weight"]))
+        contentweight_label.setMinimumWidth(25)
+        contentweight_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        contentweight_slider.setMinimum(1)
+        contentweight_slider.setMaximum(200)
+        contentweight_slider.setValue(int(self.optionsJson["style_transfer"]["content_weight"]))
+        contentweight_slider.setTickPosition(QtWidgets.QSlider.NoTicks)
+        contentweight_slider.valueChanged.connect(lambda: (
+            updateOptions("style_transfer","content_weight",contentweight_slider.value()),
+            contentweight_label.setText(str(contentweight_slider.value()))
+        ))
+        createHBoxWidget("Content weight",[contentweight_label,contentweight_slider])
         
         # Style scale
-        hbox5 = createHBoxWidget("Style scale")
-        self.stylescale_lineedit = QtWidgets.QLineEdit("1")
-        self.stylescale_lineedit.setValidator(QtGui.QIntValidator())
-        self.stylescale_lineedit.setStyleSheet('background-color: rgb(43,43,43);')
-        hbox5.addWidget(self.stylescale_lineedit)
-                
-        # Output Path
-        # hbox2 = createHBoxWidget("Select File")
-        # self.output_path_lineedit = QtWidgets.QLineEdit("C:/Users/Simon/Desktop/Output")
-        # hbox2.addWidget(self.output_path_lineedit)
-        # select_file_button = QtWidgets.QPushButton()
-        # select_file_button.setIcon(QtGui.QIcon(":fileOpen.png"))
-        # select_file_button.clicked.connect(self.select_directory)
-        # hbox2.addWidget(select_file_button)
-        # self.collapsible_a.add_layout(hbox2)
-        
-        
-    def select_directory(self):
-        output_path, selected_filter = QtWidgets.QFileDialog.getOpenFileName(self,"Select File", os.getcwd(), 'All Files(*.*)')
-        
-        #output_path = cmds.fileDialog2(fileFilter="All Files (*.*)", dialogStyle=2, fileMode=1, cap='Open Image')
-        if output_path:
-            self.output_path_lineedit.setText(output_path)
-        
+        stylescale_label = QtWidgets.QLabel(str(self.optionsJson["style_transfer"]["style_scale"]))
+        stylescale_label.setMinimumWidth(25)
+        stylescale_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        stylescale_slider.setMinimum(0)
+        stylescale_slider.setMaximum(50)
+        stylescale_slider.setValue(int(self.optionsJson["style_transfer"]["style_scale"]*10))
+        stylescale_slider.setTickPosition(QtWidgets.QSlider.NoTicks)
+        stylescale_slider.valueChanged.connect(lambda: (
+            updateOptions("style_transfer","style_scale",stylescale_slider.value()/10),
+            stylescale_label.setText(str(stylescale_slider.value()/10))
+        ))
+        createHBoxWidget("Style scale",[stylescale_label,stylescale_slider]) 
+                       
     def createMenuBar(self):
         mainMenu = QtWidgets.QMenuBar(self)
         
-        test = QtWidgets.QAction("Test",self) #QAction(QIcon('exit.png'), 'Exit', renderWindow)
-        test.setShortcut('Ctrl+M')
-        test.setStatusTip('Options')
-        test.triggered.connect(lambda x: print("Test"))
+        exportSettingsAction = QtWidgets.QAction("Export Settings",self)
+        exportSettingsAction.triggered.connect(lambda: print("Test"))
+
+        importSettingsAction = QtWidgets.QAction("Import Settings",self)
+        importSettingsAction.triggered.connect(lambda: print("Test"))
         
-        editMenu = mainMenu.addMenu("Edit")
-        editMenu.addAction(test)     
+        editMenu = mainMenu.addMenu("Presets")
+        editMenu.addAction(exportSettingsAction)     
+        editMenu.addAction(importSettingsAction)     
+
+        helpAction = QtWidgets.QAction("Help",self)
+        helpAction.triggered.connect(lambda: webbrowser.open('https://github.com/SweckEUW/Autodesk-Maya-AI-Image-Edit-Toolkit'))
+
+        presetsMenu = mainMenu.addMenu("Help")
+        presetsMenu.addAction(helpAction)   
+
+class OptionWindowStyleImageSelection(QtWidgets.QWidget):
+    def __init__(self):
+        super(OptionWindowStyleImageSelection, self).__init__()
+
+        self.sliders = []
+        self.lineedits = []
+        self.optionsJson = getOptions()
+
+        self.create_layouts()
+        self.create_widgets()
+
+    def create_layouts(self):
+        self.main_layout = QtWidgets.QVBoxLayout(self)
+
+    def create_widgets(self):
+        style_images = self.optionsJson["style_transfer"]["style_images"].split(",")
+        style_blend_weights = self.optionsJson["style_transfer"]["style_blend_weights"].split(",")
         
-        presetsMenu = mainMenu.addMenu("Presets")
+        for i in range(len(style_images)):
+            style_image_widget = self.create_style_image_widget(style_images[i],style_blend_weights[i])
+            self.main_layout.addLayout(style_image_widget)
+
+        self.add_style_image_button = QtWidgets.QPushButton()
+        self.add_style_image_button.setIcon(QtGui.QIcon(QtGui.QPixmap("./media/icons/add.svg")))
+        self.add_style_image_button.clicked.connect(self.add_style_image_widget)
+
+        self.main_layout.addWidget(self.add_style_image_button)
+
+    def create_style_image_widget(self,path,weight):
+        if weight == "None":
+            weight = "2"
+
+        # Path
+        path_label = QtWidgets.QLabel("Path")
+        path_label.setMinimumWidth(45)
+
+        output_path_lineedit = QtWidgets.QLineEdit(path)
+        output_path_lineedit.editingFinished.connect(self.update_style_images)
+        self.lineedits.append(output_path_lineedit)
+        select_file_button = QtWidgets.QPushButton()
+        select_file_button.setIcon(QtGui.QIcon(":fileOpen.png"))
+        select_file_button.clicked.connect(lambda: self.select_style_image(output_path_lineedit))
+
+        hbox_path = QtWidgets.QHBoxLayout()
+        hbox_path.addWidget(path_label)
+        hbox_path.addWidget(output_path_lineedit)
+        hbox_path.addWidget(select_file_button)
+
+        # Weight
+        weight_label = QtWidgets.QLabel("Weight")
+        weight_label.setMinimumWidth(45) 
+
+        weight_slider_label = QtWidgets.QLabel(weight)
+        weight_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        weight_slider.setMinimum(1)
+        weight_slider.setMaximum(10)
+        weight_slider.setValue(int(weight))
+        weight_slider.setTickPosition(QtWidgets.QSlider.NoTicks)
+        weight_slider.valueChanged.connect(lambda: (
+            self.update_style_images(),
+            weight_slider_label.setText(str(weight_slider.value()))
+        ))
+        self.sliders.append(weight_slider)
+
+        hbox_weight = QtWidgets.QHBoxLayout()
+        hbox_weight.addWidget(weight_label)
+        hbox_weight.addWidget(weight_slider_label)
+        hbox_weight.addWidget(weight_slider)
         
+        main_layout = QtWidgets.QVBoxLayout(self)
+        main_layout.addLayout(hbox_path)
+        main_layout.addLayout(hbox_weight)
+        return main_layout
+
+    def add_style_image_widget(self):
+        new_style_image = self.create_style_image_widget("C:/Users/Simon/Desktop/Projektarbeit/Autodesk-Maya-AI-Toolkit/media/styles/style7.jpg","2")
+
+        self.main_layout.removeWidget(self.add_style_image_button)
+
+        self.main_layout.addLayout(new_style_image)
+        self.main_layout.addWidget(self.add_style_image_button)
+
+        self.update_style_images()
+
+    def update_style_images(self):
+        style_images = ""
+        style_blend_weights = ""
+
+        for i in range(len(self.lineedits)):
+            if i == 0:
+                style_images += self.lineedits[i].text()
+            else:
+                style_images += "," + self.lineedits[i].text()
+        
+        if len(self.lineedits) == 1:
+            style_blend_weights = "None"
+        else:
+            for i in range(len(self.lineedits)):
+                if i == 0:
+                    style_blend_weights += str(self.sliders[i].value())
+                else:
+                    style_blend_weights += "," + str(self.sliders[i].value())
+
+        updateOptions("style_transfer","style_blend_weights",style_blend_weights)
+        updateOptions("style_transfer","style_images",style_images)
+
+    def select_style_image(self,widget):
+        output_path, selected_filter = QtWidgets.QFileDialog.getOpenFileName(self, "Select File", "", "Images (*.jpg *.jpeg *png *)")
+        if output_path:
+            widget.setText(output_path)
+            self.update_style_images()
 
 if __name__ == "__main__":
-    try:
-        option_window.close() #pyling: disable=E0601
+    unload_packages() 
+
+    if(option_window):
+        option_window.close()
         option_window.deleteLater()
-    except:
-        pass
     
     option_window = OptionWindow()
     option_window.show()
