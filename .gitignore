@@ -5,3 +5,4 @@ scripts/tensorflow_estimator
 scripts/tensorflow_hub
 scripts/torch
 scripts/torchvision
+scripts/tensorflow_addons
