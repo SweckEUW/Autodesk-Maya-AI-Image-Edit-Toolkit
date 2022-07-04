@@ -1,9 +1,4 @@
-import sys
-
-from PySide2 import QtCore
-from PySide2 import QtGui
-from PySide2 import QtWidgets
-from shiboken2 import wrapInstance
+from PySide2 import QtCore, QtGui, QtWidgets
 
 class CollapsibleHeader(QtWidgets.QWidget):
     
@@ -30,7 +25,7 @@ class CollapsibleHeader(QtWidgets.QWidget):
         self.main_layout.addWidget(self.text_label)
         
         self.set_text(text)
-        self.set_expanded(False)
+        self.set_expanded(True)
         
     def set_text(self, text):
         self.text_label.setText("<b>{0}</b>".format(text))
@@ -77,7 +72,7 @@ class CollapsibleWidget(QtWidgets.QWidget):
         self.main_layout.addWidget(self.header_wdg)
         self.main_layout.addWidget(self.body_wdg)
         
-        self.set_expanded(False)
+        self.set_expanded(True) 
         
     def add_widget(self, widget):
         self.body_layout.addWidget(widget)

@@ -24,21 +24,21 @@ class RenderViewFilter(QtWidgets.QDialog):
 
         if obj == self.maya_main_window:
             
-             if event.type() == QtCore.QEvent.Type.ChildPolished:
-                 child = event.child()
-                 print(child)
-                 print("ChildPolished")
-                 print(child.objectName())
-                 if 'renderViewWindow' in child.objectName():
-                     print("OPEN Render View")
+            if event.type() == QtCore.QEvent.Type.ChildPolished:
+                child = event.child()
+                print(child)
+                print("ChildPolished")
+                print(child.objectName())
+                if 'renderViewWindow' in child.objectName():
+                    print("OPEN Render View")
                  
-             if event.type() == QtCore.QEvent.Type.ChildRemoved:
-                 child = event.child()
-                 print(child)
-                 print("ChildRemoved")
-                 print(child.objectName())
-                 if 'renderViewWindow' in child.objectName():
-                     print("CLOSED Render View")
+            if event.type() == QtCore.QEvent.Type.ChildRemoved:
+                child = event.child()
+                print(child)
+                print("ChildRemoved")
+                print(child.objectName())
+                if 'renderViewWindow' in child.objectName():
+                    print("CLOSED Render View")
               
         return False
         
