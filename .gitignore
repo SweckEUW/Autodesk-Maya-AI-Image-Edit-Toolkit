@@ -6,3 +6,5 @@ scripts/tensorflow_hub
 scripts/torch
 scripts/torchvision
 scripts/tensorflow_addons
+scripts/typeguard
+scripts/__pycache__
