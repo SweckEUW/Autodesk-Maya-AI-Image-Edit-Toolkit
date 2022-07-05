@@ -6,6 +6,8 @@ import torch.optim as optim
 import torchvision.transforms as transforms
 from PIL import Image
 import gc
+import maya.cmds as cmds
+import os
 
 from neural_style import CaffeLoader
 from optionWindow_utils import getOptions
@@ -14,12 +16,13 @@ class Params(object):
     pass  
         
 params = Params()
+final_image = None
 
-def initParams():
+def initParams(path):
     options = getOptions()["style_transfer"]
     
     # Basic options
-    params.content_image = options["content_image"]
+    params.content_image = path
     params.style_image = options["style_images"]
     params.output_image = "C:/Users/Simon/Desktop/Output/output.jpg"
     params.image_size = 600
@@ -49,7 +52,8 @@ def initParams():
     # Other options
     params.style_scale = float(options["style_scale"])
     params.pooling = "max"
-    params.model_file = "C:/Users/Simon/Desktop/Projektarbeit/Autodesk-Maya-AI-Toolkit/scripts/neural_style/models/vgg19-d01eb7cb.pth"
+
+    params.model_file = os.path.join(os.path.split(cmds.file(q=True, loc=True))[0], "scripts/neural_style/models/vgg19-d01eb7cb.pth")
     params.disable_check = False
     params.backend= "nn"
     params.seed = -1
@@ -65,11 +69,11 @@ def initParams():
     Image.MAX_IMAGE_PIXELS = 1000000000 # Support gigapixel images
 
 
-def main():
+def main(path):
     gc.collect()
     torch.cuda.empty_cache()
 
-    initParams()
+    initParams(path)
     
     dtype, multidevice, backward_device = setup_gpu()
 
@@ -244,7 +248,9 @@ def main():
             if params.original_colors == 1:
                 disp = original_colors(deprocess(content_image.clone()), disp)
 
-            disp.save(str(filename))
+            # disp.save(str(filename))
+            global final_image
+            final_image = disp
 
     # Function to evaluate loss and gradient. We run the net forward and
     # backward to get the gradient, and sum up losses from the loss modules.
@@ -279,6 +285,8 @@ def main():
 
     gc.collect()
     torch.cuda.empty_cache()
+
+    return final_image
 
 
 # Configure the optimizer
@@ -353,8 +361,10 @@ def setup_multi_device(net):
 # and subtract the mean pixel.
 def preprocess(image_name, image_size):
     image = Image.open(image_name).convert('RGB')
-    if type(image_size) is not tuple:
-        image_size = tuple([int((float(image_size) / max(image.size))*x) for x in (image.height, image.width)])
+    image_size = tuple([image.height, image.width])
+    # if type(image_size) is not tuple:
+        # image_size = tuple([int((float(image_size) / max(image.size))*x) for x in (image.height, image.width)])
+    # print(image_size)
     Loader = transforms.Compose([transforms.Resize(image_size), transforms.ToTensor()])
     rgb2bgr = transforms.Compose([transforms.Lambda(lambda x: x[torch.LongTensor([2,1,0])])])
     Normalize = transforms.Compose([transforms.Normalize(mean=[103.939, 116.779, 123.68], std=[1,1,1])])

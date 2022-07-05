@@ -2,6 +2,9 @@ from PySide2 import QtCore, QtWidgets, QtGui
 from shiboken2 import wrapInstance
 import maya.OpenMayaUI as mui
 import maya.cmds as cmds
+from PIL.ImageQt import ImageQt
+import os
+import maya.app.general.createImageFormats as createImageFormats
 
 from neural_style import neural_style
 from optionWindow import OptionWindow
@@ -24,11 +27,6 @@ def maya_main_window():
     main_window_ptr = mui.MQtUtil.mainWindow()
     return wrapInstance(int(main_window_ptr),QtWidgets.QWidget)
 
-def style_transfer():
-    neural_style.main()
-    extendRenderWindowImage()
-    extended_renderview_image.update_image("C:/Users/Simon/Desktop/Output/output.jpg")
-
 def openOptionsWindow():
     global option_window
     try:
@@ -40,10 +38,25 @@ def openOptionsWindow():
     option_window = OptionWindow()
     option_window.show()
 
-def super_resolution():
-    image_super_resolution.main()
+def run_service(name):
+    # TODO: Display Loadingscreen 
+
+    # Save rendered Image
+    formatManager = createImageFormats.ImageFormats()
+    formatManager.pushRenderGlobalsForDesc("JPEG")
+    path = os.path.join(os.path.split(cmds.file(q=True, loc=True))[0], "media/tmp/rendering.jpg")
+    cmds.renderWindowEditor("renderView", e=True, writeImage=path)
+    
+    # Run Service
+    image = None
+    if name == "super_resolution":
+        image = image_super_resolution.main(path)
+    if name == "style_transfer":
+        image = neural_style.main(path)
+    
+    # Display Image
     extendRenderWindowImage()
-    extended_renderview_image.update_image("C:/Users/Simon/Desktop/test.jpg")
+    extended_renderview_image.create_image(image)
 
 class ExtendedRenderViewToolbar(QtWidgets.QWidget):
     def __init__(self):
@@ -63,13 +76,13 @@ class ExtendedRenderViewToolbar(QtWidgets.QWidget):
         self.styleTransferButton = QtWidgets.QPushButton()
         self.styleTransferButton.setIcon(QtGui.QIcon(QtGui.QPixmap("./media/icons/style_transfer.svg")))
         self.styleTransferButton.setToolTip('Run Neural style transfer')
-        self.styleTransferButton.clicked.connect(style_transfer)
+        self.styleTransferButton.clicked.connect(lambda: run_service("style_transfer"))
         
         # Image Super-Resolution
         self.superResolutionButton = QtWidgets.QPushButton()
         self.superResolutionButton.setIcon(QtGui.QIcon(QtGui.QPixmap("./media/icons/image_super_resolution.svg")))
         self.superResolutionButton.setToolTip('Run Image Super-Resolution')
-        self.superResolutionButton.clicked.connect(super_resolution)
+        self.superResolutionButton.clicked.connect(lambda: run_service("super_resolution"))
 
         # Options
         self.openOptionsWindowButton = QtWidgets.QPushButton()
@@ -108,12 +121,12 @@ class ExtendedRenderViewMenuBar(QtWidgets.QMenu):
 
         # Style Transfer
         styleTransferAction = QtWidgets.QAction("Run Style Transfer",self)
-        styleTransferAction.triggered.connect(style_transfer)
+        styleTransferAction.triggered.connect(lambda: run_service("style_transfer"))
         self.addAction(styleTransferAction)   
 
         # Image Super-Resolution
         superResolutionAction = QtWidgets.QAction("Run Image Super-Resolution",self) 
-        superResolutionAction.triggered.connect(super_resolution)
+        superResolutionAction.triggered.connect(lambda: run_service("super_resolution"))
         self.addAction(superResolutionAction)   
 
 class ExtendedRenderViewImage(QtWidgets.QWidget):
@@ -129,51 +142,39 @@ class ExtendedRenderViewImage(QtWidgets.QWidget):
         
         renderWindow.installEventFilter(self)
     
-    def create_image(self):
-        self.image = QtGui.QImage("C:/Users/Simon/Desktop/Output/Output.jpg")
-        self.image_copy = QtGui.QImage("C:/Users/Simon/Desktop/Output/Output.jpg")
-        self.image_original_width = self.image.size().width()
-        self.image_original_height = self.image.size().height()
-
-        self.pixmap = QtGui.QPixmap()
-        self.pixmap.convertFromImage(self.image)
+    def create_widgets(self):
+        # TODO: Loadinscreen
 
         self.image_widget = QtWidgets.QLabel("")
         self.image_widget.setAlignment(QtCore.Qt.AlignCenter)
-        self.image_widget.setPixmap(self.pixmap)
-
-    def create_widgets(self):
-        self.create_image()
 
     def cerate_layout(self):
         main_layout = QtWidgets.QHBoxLayout(self)
         main_layout.addWidget(self.image_widget)
         
-    def update_image(self, url):
-        self.image = QtGui.QImage(url)
-        self.image_copy = QtGui.QImage(url)
-        self.image_original_width = self.image.size().width()
-        self.image_original_height = self.image.size().height()
-
+    def create_image(self, pilImage):
+        self.image = ImageQt(pilImage)
+        
         self.pixmap = QtGui.QPixmap()
         self.pixmap.convertFromImage(self.image)
+        self.pixmap_copy = QtGui.QPixmap()
+        self.pixmap_copy.convertFromImage(self.image)
+
         self.image_widget.setPixmap(self.pixmap)
          
     def eventFilter(self, widget, event):
         if event.type() == QtCore.QEvent.Type.Resize:
-            image_width = self.image.size().width()
-            image_height = self.image.size().height()
+            image_width = self.pixmap.size().width()
+            image_height = self.pixmap.size().height()
             self_width = self.size().width()
             self_height = self.size().height()
 
             if self_width < image_width or self_height < image_height:
-                self.image = self.image_copy.scaled(self_width, self_height, QtCore.Qt.KeepAspectRatio)
-                self.pixmap.convertFromImage(self.image)
+                self.pixmap = self.pixmap_copy.scaled(self_width, self_height, QtCore.Qt.KeepAspectRatio)
                 self.image_widget.setPixmap(self.pixmap)
 
-            if self_width < self.image_original_width or self_height < self.image_original_height:
-                self.image = self.image_copy.scaled(self_width, self_height, QtCore.Qt.KeepAspectRatio)
-                self.pixmap.convertFromImage(self.image)
+            if self_width < self.pixmap_copy.size().width() or self_height < self.pixmap_copy.size().height():
+                self.pixmap = self.pixmap_copy.scaled(self_width, self_height, QtCore.Qt.KeepAspectRatio)
                 self.image_widget.setPixmap(self.pixmap)
 
     def paintEvent(self, paint_event):
@@ -214,7 +215,6 @@ def extendRenderWindow():
     print("AI_TOOLKIT : Extending Render Window")
     extendRenderWindowToolbar()
     extendRenderWindowMenuBar()
-    #extendRenderWindowImage()
 
 if __name__ == "__main__":
     unload_packages() 
