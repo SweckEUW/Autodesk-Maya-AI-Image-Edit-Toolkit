@@ -2,6 +2,8 @@ from PySide2 import QtGui, QtWidgets, QtCore
 from shiboken2 import wrapInstance
 import maya.OpenMayaUI as omui
 import webbrowser
+import maya.cmds as cmds
+import os
 
 from collapsible_widget import CollapsibleWidget
 from optionWindow_utils import updateOptions, getOptions
@@ -88,8 +90,9 @@ class OptionWindow(QtWidgets.QDialog):
         main_layout.setHorizontalSpacing(20)
         self.collapsible_a.add_layout(main_layout)
 
-        def createHBoxWidget(text,widgets):
+        def createHBoxWidget(text,widgets,tooltip_text):
             label = QtWidgets.QLabel(text)
+            label.setToolTip(tooltip_text)
             hbox = QtWidgets.QHBoxLayout()
             main_layout.addWidget(label,main_layout.rowCount(),0)
             main_layout.addLayout(hbox,main_layout.rowCount()-1,1)
@@ -98,7 +101,7 @@ class OptionWindow(QtWidgets.QDialog):
             return hbox
         
         style_images = OptionWindowStyleImageSelection()
-        createHBoxWidget("Style Images",[style_images])
+        createHBoxWidget("Style Images",[style_images],"When using multiple style images, you can control the degree to which they are blended")
 
         QSS = """
             QSlider::groove:horizontal {
@@ -127,6 +130,9 @@ class OptionWindow(QtWidgets.QDialog):
             QLineEdit{
                 background-color: rgb(43,43,43);
             }
+            QToolTip { 
+                color: #ffffff; 
+            }
         """
         self.setStyleSheet(QSS)
 
@@ -142,7 +148,7 @@ class OptionWindow(QtWidgets.QDialog):
             updateOptions("style_transfer","itterations",itterations_slider.value()),
             itterations_label.setText(str(itterations_slider.value()))
         ))
-        createHBoxWidget("Itterations",[itterations_label,itterations_slider])
+        createHBoxWidget("Itterations",[itterations_label,itterations_slider],"")
             
         # Keep original colors
         keepcolor_checkbox = QtWidgets.QCheckBox()
@@ -150,7 +156,7 @@ class OptionWindow(QtWidgets.QDialog):
         keepcolor_checkbox.toggled.connect(lambda: ( 
             updateOptions("style_transfer","original_colors",str(keepcolor_checkbox.isChecked()))
         ))
-        createHBoxWidget("Keep original colors",[keepcolor_checkbox])
+        createHBoxWidget("Keep original colors",[keepcolor_checkbox],"If you add the flag -original_colors 1 then the output image will retain the colors of the original image")
 
         # Style weight
         styleweight_label = QtWidgets.QLabel(str(self.optionsJson["style_transfer"]["style_weight"]))
@@ -164,7 +170,7 @@ class OptionWindow(QtWidgets.QDialog):
             updateOptions("style_transfer","style_weight",styleweight_slider.value()),
             styleweight_label.setText(str(styleweight_slider.value()))
         ))
-        createHBoxWidget("Style weight",[styleweight_label,styleweight_slider])
+        createHBoxWidget("Style weight",[styleweight_label,styleweight_slider],'How much to weight the style reconstruction term. Default is 100')
         
         # Content weight
         contentweight_label = QtWidgets.QLabel(str(self.optionsJson["style_transfer"]["content_weight"]))
@@ -178,7 +184,7 @@ class OptionWindow(QtWidgets.QDialog):
             updateOptions("style_transfer","content_weight",contentweight_slider.value()),
             contentweight_label.setText(str(contentweight_slider.value()))
         ))
-        createHBoxWidget("Content weight",[contentweight_label,contentweight_slider])
+        createHBoxWidget("Content weight",[contentweight_label,contentweight_slider],'How much to weight the content reconstruction term. Default is 5')
         
         # Style scale
         stylescale_label = QtWidgets.QLabel(str(self.optionsJson["style_transfer"]["style_scale"]))
@@ -192,7 +198,7 @@ class OptionWindow(QtWidgets.QDialog):
             updateOptions("style_transfer","style_scale",stylescale_slider.value()/10),
             stylescale_label.setText(str(stylescale_slider.value()/10))
         ))
-        createHBoxWidget("Style scale",[stylescale_label,stylescale_slider]) 
+        createHBoxWidget("Style scale",[stylescale_label,stylescale_slider],'By resizing the style image before extracting style features, we can control the types of artistic features that are transfered from the style image') 
                        
     def createMenuBar(self):
         mainMenu = QtWidgets.QMenuBar(self)
@@ -225,7 +231,10 @@ class OptionWindowStyleImageSelection(QtWidgets.QWidget):
         self.create_widgets()
 
     def create_layouts(self):
+        self.style_widgets_layout = QtWidgets.QVBoxLayout()
+
         self.main_layout = QtWidgets.QVBoxLayout(self)
+        self.main_layout.addLayout(self.style_widgets_layout)
 
     def create_widgets(self):
         style_images = self.optionsJson["style_transfer"]["style_images"].split(",")
@@ -233,13 +242,26 @@ class OptionWindowStyleImageSelection(QtWidgets.QWidget):
         
         for i in range(len(style_images)):
             style_image_widget = self.create_style_image_widget(style_images[i],style_blend_weights[i])
-            self.main_layout.addLayout(style_image_widget)
+            self.style_widgets_layout.addLayout(style_image_widget)
 
-        self.add_style_image_button = QtWidgets.QPushButton()
-        self.add_style_image_button.setIcon(QtGui.QIcon(QtGui.QPixmap("./media/icons/add.svg")))
-        self.add_style_image_button.clicked.connect(self.add_style_image_widget)
+        # Add and Remove Buttons
+        self.button_container = QtWidgets.QHBoxLayout()
 
-        self.main_layout.addWidget(self.add_style_image_button)
+        # Add
+        add_style_image_button = QtWidgets.QPushButton()
+        add_style_image_button.setIcon(QtGui.QIcon(QtGui.QPixmap("./media/icons/add.svg")))
+        add_style_image_button.clicked.connect(self.add_style_image_widget)
+        self.button_container.addWidget(add_style_image_button)
+
+        # Remove
+        self.delete_button = QtWidgets.QPushButton()
+        self.delete_button.setIcon(QtGui.QIcon(QtGui.QPixmap("./media/icons/delete.svg")))
+        self.delete_button.setToolTip('Delete Style Image')
+        self.delete_button.clicked.connect(lambda: self.remove_style_image_widget())
+        if len(style_images) != 1:
+            self.button_container.addWidget(self.delete_button)
+
+        self.main_layout.addLayout(self.button_container)
 
     def create_style_image_widget(self,path,weight):
         if weight == "None":
@@ -282,20 +304,36 @@ class OptionWindowStyleImageSelection(QtWidgets.QWidget):
         hbox_weight.addWidget(weight_slider_label)
         hbox_weight.addWidget(weight_slider)
         
-        main_layout = QtWidgets.QVBoxLayout(self)
+        main_layout = QtWidgets.QVBoxLayout()
         main_layout.addLayout(hbox_path)
         main_layout.addLayout(hbox_weight)
         return main_layout
 
     def add_style_image_widget(self):
-        new_style_image = self.create_style_image_widget("C:/Users/Simon/Desktop/Projektarbeit/Autodesk-Maya-AI-Toolkit/media/styles/style7.jpg","2")
+        # Add Widget
+        path = os.path.join(os.path.split(cmds.file(q=True, loc=True))[0], "media/styles/style7.jpg")
+        new_style_image = self.create_style_image_widget(path,"5")
+        self.style_widgets_layout.addLayout(new_style_image)
 
-        self.main_layout.removeWidget(self.add_style_image_button)
-
-        self.main_layout.addLayout(new_style_image)
-        self.main_layout.addWidget(self.add_style_image_button)
-
+        # Update options.json
         self.update_style_images()
+
+        # Add delete button 
+        if len(self.lineedits) == 2:
+            self.button_container.addWidget(self.delete_button)
+
+    def remove_style_image_widget(self):
+        # Remove widget
+        self.style_widgets_layout.takeAt(0)
+
+        # Update options.json
+        self.lineedits.pop(0)
+        self.sliders.pop(0)
+        self.update_style_images()
+
+        # Remove delete button 
+        if len(self.lineedits) == 1:
+            self.button_container.removeWidget(self.delete_button)
 
     def update_style_images(self):
         style_images = ""
