@@ -31,10 +31,10 @@ class OptionWindow(QtWidgets.QDialog):
         self.createMenuBar()
 
     def create_widgets(self):
-        self.collapsible_a = CollapsibleWidget("Style Transfer")
+        self.collapsible_a = CollapsibleWidget("Neural Style Transfer")
         self.addWidgetsCollapsibleA()
 
-        self.collapsible_b = CollapsibleWidget("Upscale")
+        self.collapsible_b = CollapsibleWidget("Image Super-Resolution")
         self.addWidgetsCollapsibleB()
             
 
@@ -62,15 +62,22 @@ class OptionWindow(QtWidgets.QDialog):
         main_layout.setHorizontalSpacing(20)
         self.collapsible_b.add_layout(main_layout)
 
-        hbox = QtWidgets.QHBoxLayout()
+        label = QtWidgets.QLabel("Model")
+        label.setToolTip("Selected Neural Network for Image Super-Resolution")
 
         r0 = QtWidgets.QRadioButton("SRGAN")
         r0.setChecked(self.optionsJson["image_super_resolution"]["model"] == "SRGAN")
+        r0.setToolTip("Photo-Realistic Single Image Super-Resolution Using a Generative Adversarial Network (SRGAN)")
+
         r1 = QtWidgets.QRadioButton("EDSR")
         r1.setChecked(self.optionsJson["image_super_resolution"]["model"] == "EDSR")
+        r0.setToolTip("Enhanced Deep Residual Networks for Single Image Super-Resolution (EDSR), winner of the NTIRE 2017 super-resolution challenge")
+
         r2 = QtWidgets.QRadioButton("WDSR")
         r2.setChecked(self.optionsJson["image_super_resolution"]["model"] == "WDSR")
+        r0.setToolTip("Wide Activation for Efficient and Accurate Image Super-Resolution (WDSR), winner of the NTIRE 2018 super-resolution challenge (realistic tracks).")
 
+        hbox = QtWidgets.QHBoxLayout()
         hbox.addWidget(r0) 
         hbox.addWidget(r1)
         hbox.addWidget(r2)
@@ -81,7 +88,6 @@ class OptionWindow(QtWidgets.QDialog):
         number_group.addButton(r2)
         number_group.buttonClicked.connect(lambda: updateOptions("image_super_resolution","model",number_group.checkedButton().text()))
 
-        label = QtWidgets.QLabel("Model")
         main_layout.addWidget(label,0,0)
         main_layout.addLayout(hbox,0,1)
 
@@ -156,7 +162,7 @@ class OptionWindow(QtWidgets.QDialog):
         keepcolor_checkbox.toggled.connect(lambda: ( 
             updateOptions("style_transfer","original_colors",str(keepcolor_checkbox.isChecked()))
         ))
-        createHBoxWidget("Keep original colors",[keepcolor_checkbox],"If you add the flag -original_colors 1 then the output image will retain the colors of the original image")
+        createHBoxWidget("Keep original colors",[keepcolor_checkbox],"The output image will retain the colors of the original image")
 
         # Style weight
         styleweight_label = QtWidgets.QLabel(str(self.optionsJson["style_transfer"]["style_weight"]))
@@ -216,8 +222,16 @@ class OptionWindow(QtWidgets.QDialog):
         helpAction = QtWidgets.QAction("Help",self)
         helpAction.triggered.connect(lambda: webbrowser.open('https://github.com/SweckEUW/Autodesk-Maya-AI-Image-Edit-Toolkit'))
 
+        helpAction_styleTransfer = QtWidgets.QAction("Help Style Transfer",self)
+        helpAction_styleTransfer.triggered.connect(lambda: webbrowser.open('https://github.com/ProGamerGov/neural-style-pt'))
+
+        helpAction_superResolution = QtWidgets.QAction("Help Image Super-Resolution",self)
+        helpAction_superResolution.triggered.connect(lambda: webbrowser.open('https://github.com/krasserm/super-resolution'))
+
         presetsMenu = mainMenu.addMenu("Help")
         presetsMenu.addAction(helpAction)   
+        presetsMenu.addAction(helpAction_styleTransfer)   
+        presetsMenu.addAction(helpAction_superResolution)   
 
 class OptionWindowStyleImageSelection(QtWidgets.QWidget):
     def __init__(self):
@@ -250,13 +264,14 @@ class OptionWindowStyleImageSelection(QtWidgets.QWidget):
         # Add
         add_style_image_button = QtWidgets.QPushButton()
         add_style_image_button.setIcon(QtGui.QIcon(QtGui.QPixmap("./media/icons/add.svg")))
+        add_style_image_button.setToolTip('Add Style Image')
         add_style_image_button.clicked.connect(self.add_style_image_widget)
         self.button_container.addWidget(add_style_image_button)
 
         # Remove
         self.delete_button = QtWidgets.QPushButton()
         self.delete_button.setIcon(QtGui.QIcon(QtGui.QPixmap("./media/icons/delete.svg")))
-        self.delete_button.setToolTip('Delete Style Image')
+        self.delete_button.setToolTip('Delete First Style Image')
         self.delete_button.clicked.connect(lambda: self.remove_style_image_widget())
         if len(style_images) != 1:
             self.button_container.addWidget(self.delete_button)
@@ -269,12 +284,14 @@ class OptionWindowStyleImageSelection(QtWidgets.QWidget):
 
         # Path
         path_label = QtWidgets.QLabel("Path")
+        path_label.setToolTip('Path to Style Image')
         path_label.setMinimumWidth(45)
 
         output_path_lineedit = QtWidgets.QLineEdit(path)
         output_path_lineedit.editingFinished.connect(self.update_style_images)
         self.lineedits.append(output_path_lineedit)
         select_file_button = QtWidgets.QPushButton()
+        select_file_button.setToolTip('Select path to Style Image')
         select_file_button.setIcon(QtGui.QIcon(":fileOpen.png"))
         select_file_button.clicked.connect(lambda: self.select_style_image(output_path_lineedit))
 
@@ -286,13 +303,16 @@ class OptionWindowStyleImageSelection(QtWidgets.QWidget):
         # Weight
         weight_label = QtWidgets.QLabel("Weight")
         weight_label.setMinimumWidth(45) 
+        weight_label.setToolTip('The weight for blending the style of multiple style images')
 
         weight_slider_label = QtWidgets.QLabel(weight)
+        weight_slider_label.setToolTip('The weight for blending the style of multiple style images')
         weight_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         weight_slider.setMinimum(1)
         weight_slider.setMaximum(10)
         weight_slider.setValue(int(weight))
         weight_slider.setTickPosition(QtWidgets.QSlider.NoTicks)
+        weight_slider.setToolTip('The weight for blending the style of multiple style images')
         weight_slider.valueChanged.connect(lambda: (
             self.update_style_images(),
             weight_slider_label.setText(str(weight_slider.value()))
@@ -358,7 +378,8 @@ class OptionWindowStyleImageSelection(QtWidgets.QWidget):
         updateOptions("style_transfer","style_images",style_images)
 
     def select_style_image(self,widget):
-        output_path, selected_filter = QtWidgets.QFileDialog.getOpenFileName(self, "Select File", "", "Images (*.jpg *.jpeg *png *)")
+        starting_path = os.path.join(os.path.split(cmds.file(q=True, loc=True))[0], "media/styles/")
+        output_path, selected_filter = QtWidgets.QFileDialog.getOpenFileName(self, "Select File", starting_path, "Images (*.jpg *.jpeg *png *)")
         if output_path:
             widget.setText(output_path)
             self.update_style_images()
