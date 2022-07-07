@@ -104,15 +104,15 @@ class ExtendedRenderViewToolbar(QtWidgets.QWidget):
 class ExtendedRenderViewMenuBar(QtWidgets.QMenu):
     def __init__(self):
         renderWindow = getPyQtWindowByName("renderViewWindow")
-        super(ExtendedRenderViewMenuBar, self).__init__("AI Image Edit",renderWindow)
+        super(ExtendedRenderViewMenuBar, self).__init__("AI Image Edit",self)
 
         self.setObjectName("ExtendedRenderViewMenuBar")
-
-        self.addActions()
 
         # Add this QMenu to Render View MenuBar
         menubar = renderWindow.findChild(QtWidgets.QMenuBar,"renderView")
         menubar.addMenu(self)
+
+        self.addActions()
 
     def addActions(self):
         # Options
