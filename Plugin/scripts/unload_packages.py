@@ -2,7 +2,7 @@ import sys
 
 # if you have some packages that you often reload, you can put them here
 # and they will get reloaded if "packages" attribute is not explicitly stated
-DEFAULT_RELOAD_PACKAGES = ["AI_Image_Edit_Toolkit_Plugin_Test","collapsible_widget","extendRenderWindow","onRenderViewOpen_EventFiltering","onRenderViewOpen_ScriptJob","options","optionWindow_utils","optionWindow","neural_style"] 
+DEFAULT_RELOAD_PACKAGES = ["AI_Image_Edit_Toolkit_Plugin_Test","collapsible_widget","extendRenderWindow","onRenderViewOpen","options","optionWindow_utils","optionWindow","neural_style"] 
 
 def unload_packages(silent=False, packages=None):
             

@@ -21,10 +21,15 @@ class WindowWatcher():
                 #print("Render Window Closed!")
 
 
+script_job_number = None
 def listen_to_window_events():
     print("AI_TOOLKIT : Installing Window Watcher")
     render_window_watcher = WindowWatcher()
-    cmds.scriptJob(event=["idle", pm.windows.Callback(render_window_watcher.check_for_window_open)])
-     
+    global script_job_number
+    script_job_number = cmds.scriptJob(event=["idle", pm.windows.Callback(render_window_watcher.check_for_window_open)])
+
+def remove_listen_to_window_events():
+    cmds.scriptJob(kill=script_job_number)
+
 if __name__ == "__main__":
     listen_to_window_events()

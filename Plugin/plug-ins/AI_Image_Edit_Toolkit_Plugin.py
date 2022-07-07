@@ -1,7 +1,7 @@
 import maya.api.OpenMaya as mui
 import maya.cmds as cmds
 
-from onRenderViewOpen_ScriptJob import listen_to_window_events
+from onRenderViewOpen import listen_to_window_events, remove_listen_to_window_events
 
 def maya_useNewAPI():
     pass
@@ -18,4 +18,4 @@ def initializePlugin(plugin):
     
     
 def uninitializePlugin(plugin):
-    pass
+    remove_listen_to_window_events()
