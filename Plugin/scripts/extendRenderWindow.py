@@ -9,6 +9,7 @@ import maya.app.general.createImageFormats as createImageFormats
 from neural_style import neural_style
 from optionWindow import OptionWindow
 from image_super_resolution import image_super_resolution
+from neural_dream import neural_dream
 from unload_packages import unload_packages
 
 
@@ -53,6 +54,8 @@ def run_service(name):
         image = image_super_resolution.main(path)
     if name == "style_transfer":
         image = neural_style.main(path)
+    if name == "neural_dream":
+        image = neural_dream.main(path)
     
     # Display Image
     extended_renderview_image.set_Image(image)
@@ -102,6 +105,12 @@ class ExtendedRenderViewToolbar(QtWidgets.QWidget):
         self.removeOverlayButton.setToolTip('Remove Overlay')
         self.removeOverlayButton.clicked.connect(removeOverlay)
 
+        # Neural Dream
+        self.neuralDreamButton = QtWidgets.QPushButton()
+        self.neuralDreamButton.setIcon(QtGui.QIcon(QtGui.QPixmap("./Plugin/media/icons/dream.svg")))
+        self.neuralDreamButton.setToolTip('Run Neural Dream on Rendering')
+        self.neuralDreamButton.clicked.connect(lambda: run_service("neural_dream"))
+
     def cerate_layout(self):
         main_layout = QtWidgets.QHBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
@@ -109,25 +118,26 @@ class ExtendedRenderViewToolbar(QtWidgets.QWidget):
         main_layout.addWidget(self.openOptionsWindowButton)
         main_layout.addWidget(self.styleTransferButton)
         main_layout.addWidget(self.superResolutionButton)
+        main_layout.addWidget(self.neuralDreamButton)
         main_layout.addWidget(self.removeOverlayButton)
  
 class ExtendedRenderViewMenuBar(QtWidgets.QMenu):
     def __init__(self):
         renderWindow = getPyQtWindowByName("renderViewWindow")
-        super(ExtendedRenderViewMenuBar, self).__init__("AI Image Edit")
+        menubar = renderWindow.findChild(QtWidgets.QMenuBar,"renderView")
+        super(ExtendedRenderViewMenuBar, self).__init__("AI Image Edit",menubar)
 
         self.setObjectName("ExtendedRenderViewMenuBar")
 
         # Add this QMenu to Render View MenuBar
-        menubar = renderWindow.findChild(QtWidgets.QMenuBar,"renderView")
+        
         menubar.addMenu(self)
 
         self.addActions()
 
     def addActions(self):
         # Options
-        openOptionsAction = QtWidgets.QAction("Options",self) #QAction(QIcon('exit.png'), 'Exit', renderWindow)
-        # openOptionsAction.setShortcut('Ctrl+M')
+        openOptionsAction = QtWidgets.QAction("Options",self)
         openOptionsAction.setStatusTip('Options')
         openOptionsAction.triggered.connect(openOptionsWindow)
         self.addAction(openOptionsAction)   
@@ -141,6 +151,11 @@ class ExtendedRenderViewMenuBar(QtWidgets.QMenu):
         superResolutionAction = QtWidgets.QAction("Run Image Super-Resolution",self) 
         superResolutionAction.triggered.connect(lambda: run_service("super_resolution"))
         self.addAction(superResolutionAction)   
+
+        # Neural Dream
+        neuralDreamAction = QtWidgets.QAction("Run Neural Dream",self) 
+        neuralDreamAction.triggered.connect(lambda: run_service("neural_dream"))
+        self.addAction(neuralDreamAction)   
 
         # Save Image
         saveImageAction = QtWidgets.QAction("Save Image",self)
@@ -245,7 +260,6 @@ def extendRenderWindowMenuBar():
 
     global extended_renderview_menubar
     extended_renderview_menubar = ExtendedRenderViewMenuBar()
-    extended_renderview_menubar.show()
 
 def extendRenderWindowImage():
     oldImage = getPyQtWindowByName("renderViewWindow").findChild(QtWidgets.QWidget,"ExtendedRenderViewImage")
@@ -267,7 +281,7 @@ def extendRenderWindowToolbar():
 def extendRenderWindow():
     print("AI_TOOLKIT : Extending Render Window")
     extendRenderWindowToolbar()
-    # extendRenderWindowMenuBar()
+    extendRenderWindowMenuBar()
     extendRenderWindowImage()
 
 if __name__ == "__main__":

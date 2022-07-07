@@ -364,7 +364,6 @@ def preprocess(image_name, image_size):
     image_size = tuple([image.height, image.width])
     # if type(image_size) is not tuple:
         # image_size = tuple([int((float(image_size) / max(image.size))*x) for x in (image.height, image.width)])
-    # print(image_size)
     Loader = transforms.Compose([transforms.Resize(image_size), transforms.ToTensor()])
     rgb2bgr = transforms.Compose([transforms.Lambda(lambda x: x[torch.LongTensor([2,1,0])])])
     Normalize = transforms.Compose([transforms.Normalize(mean=[103.939, 116.779, 123.68], std=[1,1,1])])
