@@ -44,7 +44,7 @@ def run_service(name):
     # Save rendered Image
     formatManager = createImageFormats.ImageFormats()
     formatManager.pushRenderGlobalsForDesc("JPEG")
-    path = os.path.join(os.path.split(cmds.file(q=True, loc=True))[0], "media/tmp/rendering.jpg")
+    path = os.path.join(os.path.split(cmds.file(q=True, loc=True))[0], "Plugin/media/tmp/rendering.jpg")
     cmds.renderWindowEditor("renderView", e=True, writeImage=path)
     
     # Run Service
@@ -77,19 +77,19 @@ class ExtendedRenderViewToolbar(QtWidgets.QWidget):
     def create_widgets(self):
         # Neural style transfer
         self.styleTransferButton = QtWidgets.QPushButton()
-        self.styleTransferButton.setIcon(QtGui.QIcon(QtGui.QPixmap("./media/icons/style_transfer.svg")))
+        self.styleTransferButton.setIcon(QtGui.QIcon(QtGui.QPixmap("./Plugin/media/icons/style_transfer.svg")))
         self.styleTransferButton.setToolTip('Run Neural Style Transfer on Rendering')
         self.styleTransferButton.clicked.connect(lambda: run_service("style_transfer"))
         
         # Image Super-Resolution
         self.superResolutionButton = QtWidgets.QPushButton()
-        self.superResolutionButton.setIcon(QtGui.QIcon(QtGui.QPixmap("./media/icons/image_super_resolution.svg")))
+        self.superResolutionButton.setIcon(QtGui.QIcon(QtGui.QPixmap("./Plugin/media/icons/image_super_resolution.svg")))
         self.superResolutionButton.setToolTip('Run Image Super-Resolution on Rendering')
         self.superResolutionButton.clicked.connect(lambda: run_service("super_resolution"))
 
         # Options
         self.openOptionsWindowButton = QtWidgets.QPushButton()
-        self.openOptionsWindowButton.setIcon(QtGui.QIcon(QtGui.QPixmap("./media/icons/settings.svg")))
+        self.openOptionsWindowButton.setIcon(QtGui.QIcon(QtGui.QPixmap("./Plugin/media/icons/settings.svg")))
         self.openOptionsWindowButton.setToolTip('Open AI-Image-Edit-Toolkit Options')
         self.openOptionsWindowButton.clicked.connect(openOptionsWindow)
 

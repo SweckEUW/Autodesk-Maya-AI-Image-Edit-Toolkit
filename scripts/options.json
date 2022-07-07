@@ -1,1 +1,0 @@
-{"style_transfer": {"style_images": "C:/Users/Simon/Desktop/Projektarbeit/Autodesk-Maya-AI-Toolkit/media/styles/style7.jpg", "itterations": 408, "original_colors": "False", "style_weight": 100, "content_weight": 4, "style_scale": 1.0, "style_blend_weights": "None"}, "image_super_resolution": {"model": "SRGAN"}}

@@ -25,17 +25,17 @@ def main(path):
     # EDSR
     if options["model"] == "EDSR":
         model = edsr(scale=4, num_res_blocks=16)
-        model.load_weights(get_absolute_path('scripts/image_super_resolution/weights/edsr-16-x4/weights.h5'))
+        model.load_weights(get_absolute_path('Plugin/scripts/image_super_resolution/weights/edsr-16-x4/weights.h5'))
 
     # WDSR
     if options["model"] == "WDSR":
         model = wdsr_b(scale=4, num_res_blocks=32)
-        model.load_weights(get_absolute_path('scripts/image_super_resolution/weights/wdsr-b-32-x4/weights.h5'))
+        model.load_weights(get_absolute_path('Plugin/scripts/image_super_resolution/weights/wdsr-b-32-x4/weights.h5'))
 
     # SRGAN
     if options["model"] == "SRGAN":
         model = generator()
-        model.load_weights(get_absolute_path("scripts/image_super_resolution/weights/srgan/gan_generator.h5"))
+        model.load_weights(get_absolute_path("Plugin/scripts/image_super_resolution/weights/srgan/gan_generator.h5"))
 
     lr = load_image(path)
     sr = resolve_single(model, lr)
@@ -47,6 +47,6 @@ if __name__ == "__main__":
     formatManager = createImageFormats.ImageFormats()
     formatManager.pushRenderGlobalsForDesc("JPEG")
 
-    path = os.path.join(os.path.split(mc.file(q=True, loc=True))[0], "media/tmp/rendering.jpg")
+    path = os.path.join(os.path.split(mc.file(q=True, loc=True))[0], "Plugin/media/tmp/rendering.jpg")
     mc.renderWindowEditor("renderView", e=True, writeImage=path)
     main(path)

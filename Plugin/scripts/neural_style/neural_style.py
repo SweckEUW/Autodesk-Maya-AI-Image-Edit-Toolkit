@@ -53,7 +53,7 @@ def initParams(path):
     params.style_scale = float(options["style_scale"])
     params.pooling = "max"
 
-    params.model_file = os.path.join(os.path.split(cmds.file(q=True, loc=True))[0], "scripts/neural_style/models/vgg19-d01eb7cb.pth")
+    params.model_file = os.path.join(os.path.split(cmds.file(q=True, loc=True))[0], "Plugin/scripts/neural_style/models/vgg19-d01eb7cb.pth")
     params.disable_check = False
     params.backend= "nn"
     params.seed = -1

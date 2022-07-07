@@ -263,14 +263,14 @@ class OptionWindowStyleImageSelection(QtWidgets.QWidget):
 
         # Add
         add_style_image_button = QtWidgets.QPushButton()
-        add_style_image_button.setIcon(QtGui.QIcon(QtGui.QPixmap("./media/icons/add.svg")))
+        add_style_image_button.setIcon(QtGui.QIcon(QtGui.QPixmap("./Plugin/media/icons/add.svg")))
         add_style_image_button.setToolTip('Add Style Image')
         add_style_image_button.clicked.connect(self.add_style_image_widget)
         self.button_container.addWidget(add_style_image_button)
 
         # Remove
         self.delete_button = QtWidgets.QPushButton()
-        self.delete_button.setIcon(QtGui.QIcon(QtGui.QPixmap("./media/icons/delete.svg")))
+        self.delete_button.setIcon(QtGui.QIcon(QtGui.QPixmap("./Plugin/media/icons/delete.svg")))
         self.delete_button.setToolTip('Delete First Style Image')
         self.delete_button.clicked.connect(lambda: self.remove_style_image_widget())
         if len(style_images) != 1:
@@ -331,7 +331,7 @@ class OptionWindowStyleImageSelection(QtWidgets.QWidget):
 
     def add_style_image_widget(self):
         # Add Widget
-        path = os.path.join(os.path.split(cmds.file(q=True, loc=True))[0], "media/styles/style7.jpg")
+        path = os.path.join(os.path.split(cmds.file(q=True, loc=True))[0], "Plugin/media/styles/style7.jpg")
         new_style_image = self.create_style_image_widget(path,"5")
         self.style_widgets_layout.addLayout(new_style_image)
 
@@ -378,7 +378,7 @@ class OptionWindowStyleImageSelection(QtWidgets.QWidget):
         updateOptions("style_transfer","style_images",style_images)
 
     def select_style_image(self,widget):
-        starting_path = os.path.join(os.path.split(cmds.file(q=True, loc=True))[0], "media/styles/")
+        starting_path = os.path.join(os.path.split(cmds.file(q=True, loc=True))[0], "Plugin/media/styles/")
         output_path, selected_filter = QtWidgets.QFileDialog.getOpenFileName(self, "Select File", starting_path, "Images (*.jpg *.jpeg *png *)")
         if output_path:
             widget.setText(output_path)

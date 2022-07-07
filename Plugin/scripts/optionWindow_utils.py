@@ -2,7 +2,7 @@ import maya.cmds as mc
 import os
 import json
 
-optionsPath = 'scripts/options.json'
+optionsPath = 'Plugin/scripts/options.json'
 optionsAbsolutePath = os.path.join(os.path.split(mc.file(q=True, loc=True))[0], optionsPath)
 
 def getOptions():
