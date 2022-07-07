@@ -55,11 +55,14 @@ def run_service(name):
         image = neural_style.main(path)
     
     # Display Image
-    extendRenderWindowImage()
-    extended_renderview_image.create_image(image)
+    extended_renderview_image.set_Image(image)
+    extended_renderview_image.setOverlayVisible(True)
 
 def saveImage():
     extended_renderview_image.saveImage()
+
+def removeOverlay():
+    extended_renderview_image.toggleOverlay()
 
 class ExtendedRenderViewToolbar(QtWidgets.QWidget):
     def __init__(self):
@@ -93,6 +96,12 @@ class ExtendedRenderViewToolbar(QtWidgets.QWidget):
         self.openOptionsWindowButton.setToolTip('Open AI-Image-Edit-Toolkit Options')
         self.openOptionsWindowButton.clicked.connect(openOptionsWindow)
 
+        # Remove Overlay
+        self.removeOverlayButton = QtWidgets.QPushButton()
+        self.removeOverlayButton.setIcon(QtGui.QIcon(QtGui.QPixmap("./Plugin/media/icons/hidden.svg")))
+        self.removeOverlayButton.setToolTip('Remove Overlay')
+        self.removeOverlayButton.clicked.connect(removeOverlay)
+
     def cerate_layout(self):
         main_layout = QtWidgets.QHBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
@@ -100,11 +109,12 @@ class ExtendedRenderViewToolbar(QtWidgets.QWidget):
         main_layout.addWidget(self.openOptionsWindowButton)
         main_layout.addWidget(self.styleTransferButton)
         main_layout.addWidget(self.superResolutionButton)
-
+        main_layout.addWidget(self.removeOverlayButton)
+ 
 class ExtendedRenderViewMenuBar(QtWidgets.QMenu):
     def __init__(self):
         renderWindow = getPyQtWindowByName("renderViewWindow")
-        super(ExtendedRenderViewMenuBar, self).__init__("AI Image Edit",self)
+        super(ExtendedRenderViewMenuBar, self).__init__("AI Image Edit")
 
         self.setObjectName("ExtendedRenderViewMenuBar")
 
@@ -147,8 +157,10 @@ class ExtendedRenderViewImage(QtWidgets.QWidget):
 
         self.create_widgets()
         self.cerate_layout()
-        
+    
         self.renderWindow.installEventFilter(self)
+
+        self.overlayVisible = False
     
     def create_widgets(self):
         # TODO: Loadinscreen
@@ -160,7 +172,7 @@ class ExtendedRenderViewImage(QtWidgets.QWidget):
         main_layout = QtWidgets.QHBoxLayout(self)
         main_layout.addWidget(self.image_widget)
         
-    def create_image(self, pilImage):
+    def set_Image(self, pilImage):
         self.image = ImageQt(pilImage)
         
         self.pixmap = QtGui.QPixmap()
@@ -176,10 +188,13 @@ class ExtendedRenderViewImage(QtWidgets.QWidget):
         if event.type() == QtCore.QEvent.Type.Resize:
             self.resizeImage()
         if event.type() == QtCore.QEvent.Type.Wheel:
-            new_height = self.pixmap.size().height() + event.angleDelta().y()
-            new_width = self.pixmap.size().width() + event.angleDelta().y()
-            self.pixmap = self.pixmap_copy.scaled(new_width, new_height, QtCore.Qt.KeepAspectRatio, QtCore.Qt.TransformationMode.SmoothTransformation)
-            self.image_widget.setPixmap(self.pixmap)
+            self.handleWheelEvent(event)
+
+    def handleWheelEvent(self, event):
+        new_height = self.pixmap.size().height() + event.angleDelta().y()
+        new_width = self.pixmap.size().width() + event.angleDelta().y()
+        self.pixmap = self.pixmap_copy.scaled(new_width, new_height, QtCore.Qt.KeepAspectRatio, QtCore.Qt.TransformationMode.SmoothTransformation)
+        self.image_widget.setPixmap(self.pixmap)
 
     def resizeImage(self):
         image_width = self.pixmap.size().width()
@@ -199,6 +214,22 @@ class ExtendedRenderViewImage(QtWidgets.QWidget):
         fileName, selected_filter = QtWidgets.QFileDialog.getSaveFileName(self, "Save Image File","","Images (*.jpg *.jpeg *png *)")
         if fileName:
             self.image.save(fileName)
+
+    def setOverlayVisible(self,bool):
+        self.overlayVisible = bool
+        self.handleOverlayChange()
+
+    def toggleOverlay(self):
+        self.overlayVisible = not self.overlayVisible
+        self.handleOverlayChange()
+    
+    def handleOverlayChange(self):
+        if self.overlayVisible:
+            self.show()
+            extended_renderview_toolbar.removeOverlayButton.setIcon(QtGui.QIcon(QtGui.QPixmap("./Plugin/media/icons/visible.svg")))
+        else:
+            self.hide()
+            extended_renderview_toolbar.removeOverlayButton.setIcon(QtGui.QIcon(QtGui.QPixmap("./Plugin/media/icons/hidden.svg")))
 
     def paintEvent(self, paint_event):
         parent = self.parentWidget()
@@ -223,7 +254,6 @@ def extendRenderWindowImage():
 
     global extended_renderview_image
     extended_renderview_image = ExtendedRenderViewImage()
-    extended_renderview_image.show()
 
 def extendRenderWindowToolbar():
     oldToolbar = getPyQtWindowByName("renderViewWindow").findChild(QtWidgets.QWidget,"ExtendedRenderViewToolbar")
@@ -237,7 +267,8 @@ def extendRenderWindowToolbar():
 def extendRenderWindow():
     print("AI_TOOLKIT : Extending Render Window")
     extendRenderWindowToolbar()
-    extendRenderWindowMenuBar()
+    # extendRenderWindowMenuBar()
+    extendRenderWindowImage()
 
 if __name__ == "__main__":
     unload_packages() 
