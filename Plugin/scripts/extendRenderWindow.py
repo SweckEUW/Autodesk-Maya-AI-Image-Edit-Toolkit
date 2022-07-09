@@ -3,8 +3,10 @@ from shiboken2 import wrapInstance
 import maya.OpenMayaUI as mui
 import maya.cmds as cmds
 from PIL.ImageQt import ImageQt
-import os
+import sys,os
 import maya.app.general.createImageFormats as createImageFormats
+import maya.utils as utils
+
 
 from neural_style import neural_style
 from optionWindow import OptionWindow
@@ -39,10 +41,13 @@ def openOptionsWindow():
     option_window = OptionWindow()
     option_window.show()
 
-def run_service(name):
-    # TODO: Display Loadingscreen 
+def run_service(name):  
+    # Display Loadingscreen
+    extended_renderview_image.setOverlayVisible(True)
+    extended_renderview_image.toggleLoadingscreen()
+    QtCore.QCoreApplication.processEvents()
 
-    # Save rendered Image
+    # Save Rendering to disk
     formatManager = createImageFormats.ImageFormats()
     formatManager.pushRenderGlobalsForDesc("JPEG")
     path = os.path.join(os.path.split(cmds.file(q=True, loc=True))[0], "Plugin/media/tmp/rendering.jpg")
@@ -59,7 +64,8 @@ def run_service(name):
     
     # Display Image
     extended_renderview_image.set_Image(image)
-    extended_renderview_image.setOverlayVisible(True)
+
+    extended_renderview_image.toggleLoadingscreen()
 
 def saveImage():
     extended_renderview_image.saveImage()
@@ -85,7 +91,7 @@ class ExtendedRenderViewToolbar(QtWidgets.QWidget):
         self.styleTransferButton = QtWidgets.QPushButton()
         self.styleTransferButton.setIcon(QtGui.QIcon(QtGui.QPixmap("./Plugin/media/icons/style_transfer.svg")))
         self.styleTransferButton.setToolTip('Run Neural Style Transfer on Rendering')
-        self.styleTransferButton.clicked.connect(lambda: run_service("style_transfer"))
+        self.styleTransferButton.clicked.connect(lambda:run_service("style_transfer"))
         
         # Image Super-Resolution
         self.superResolutionButton = QtWidgets.QPushButton()
@@ -176,17 +182,23 @@ class ExtendedRenderViewImage(QtWidgets.QWidget):
         self.renderWindow.installEventFilter(self)
 
         self.overlayVisible = False
+        self.loadingscreenVisible = False
     
     def create_widgets(self):
-        # TODO: Loadinscreen
-
+        self.loading_screen_widget =  QtWidgets.QLabel("")
+        self.loading_screen_widget.setAlignment(QtCore.Qt.AlignCenter)
+        loadingscreen_gif = QtGui.QMovie("./Plugin/media/icons/loading.gif")
+        self.loading_screen_widget.setMovie(loadingscreen_gif)
+        loadingscreen_gif.start()
+        
         self.image_widget = QtWidgets.QLabel("")
         self.image_widget.setAlignment(QtCore.Qt.AlignCenter)
 
     def cerate_layout(self):
-        main_layout = QtWidgets.QHBoxLayout(self)
-        main_layout.addWidget(self.image_widget)
+        self.main_layout = QtWidgets.QStackedLayout(self)
         
+        self.main_layout.addWidget(self.image_widget)
+
     def set_Image(self, pilImage):
         self.image = ImageQt(pilImage)
         
@@ -212,18 +224,19 @@ class ExtendedRenderViewImage(QtWidgets.QWidget):
         self.image_widget.setPixmap(self.pixmap)
 
     def resizeImage(self):
-        image_width = self.pixmap.size().width()
-        image_height = self.pixmap.size().height()
-        self_width = self.renderWindow.size().width()
-        self_height = self.renderWindow.size().height() - 70
+        if self.image:
+            image_width = self.pixmap.size().width()
+            image_height = self.pixmap.size().height()
+            self_width = self.renderWindow.size().width()
+            self_height = self.renderWindow.size().height() - 70
 
-        if self_width < image_width or self_height < image_height:
-            self.pixmap = self.pixmap_copy.scaled(self_width, self_height, QtCore.Qt.KeepAspectRatio, QtCore.Qt.TransformationMode.SmoothTransformation)
-            self.image_widget.setPixmap(self.pixmap)
+            if self_width < image_width or self_height < image_height:
+                self.pixmap = self.pixmap_copy.scaled(self_width, self_height, QtCore.Qt.KeepAspectRatio, QtCore.Qt.TransformationMode.SmoothTransformation)
+                self.image_widget.setPixmap(self.pixmap)
 
-        if self_width < self.pixmap_copy.size().width() or self_height < self.pixmap_copy.size().height():
-            self.pixmap = self.pixmap_copy.scaled(self_width, self_height, QtCore.Qt.KeepAspectRatio, QtCore.Qt.TransformationMode.SmoothTransformation)
-            self.image_widget.setPixmap(self.pixmap)
+            if self_width < self.pixmap_copy.size().width() or self_height < self.pixmap_copy.size().height():
+                self.pixmap = self.pixmap_copy.scaled(self_width, self_height, QtCore.Qt.KeepAspectRatio, QtCore.Qt.TransformationMode.SmoothTransformation)
+                self.image_widget.setPixmap(self.pixmap)
 
     def saveImage(self):
         fileName, selected_filter = QtWidgets.QFileDialog.getSaveFileName(self, "Save Image File","","Images (*.jpg *.jpeg *png *)")
@@ -237,7 +250,19 @@ class ExtendedRenderViewImage(QtWidgets.QWidget):
     def toggleOverlay(self):
         self.overlayVisible = not self.overlayVisible
         self.handleOverlayChange()
-    
+ 
+    def toggleLoadingscreen(self):
+        self.loadingscreenVisible = not self.loadingscreenVisible
+        if self.loadingscreenVisible:
+            print("Adding loadingscreen")
+            self.main_layout.takeAt(0)
+            self.main_layout.addWidget(self.loading_screen_widget)
+        else:
+            print("Remove loadingscreen")
+            self.main_layout.takeAt(0)
+            self.main_layout.addWidget(self.image_widget)
+
+
     def handleOverlayChange(self):
         if self.overlayVisible:
             self.show()
