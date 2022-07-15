@@ -1,10 +1,3 @@
-scripts/tensorflow
-scripts/PIL
-scripts/numpy
-scripts/tensorflow_estimator
-scripts/tensorflow_hub
-scripts/torch
-scripts/torchvision
-scripts/tensorflow_addons
-scripts/typeguard
-scripts/__pycache__
+Plugin/scripts/__pycache__
+Plugin/scripts/options.json
+Plugin/media/tmp/rendering.jpg
