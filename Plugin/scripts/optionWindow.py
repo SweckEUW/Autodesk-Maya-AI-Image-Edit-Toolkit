@@ -266,15 +266,16 @@ class OptionWindow(QtWidgets.QDialog):
     def createMenuBar(self):
         mainMenu = QtWidgets.QMenuBar(self)
         
-        exportSettingsAction = QtWidgets.QAction("Export Settings",self)
-        exportSettingsAction.triggered.connect(lambda: print("Test"))
+        # # TOOD: Export/Import Settings
+        # exportSettingsAction = QtWidgets.QAction("Export Settings",self)
+        # exportSettingsAction.triggered.connect(lambda: print("Test"))
 
-        importSettingsAction = QtWidgets.QAction("Import Settings",self)
-        importSettingsAction.triggered.connect(lambda: print("Test"))
+        # importSettingsAction = QtWidgets.QAction("Import Settings",self)
+        # importSettingsAction.triggered.connect(lambda: print("Test"))
         
-        editMenu = mainMenu.addMenu("Presets")
-        editMenu.addAction(exportSettingsAction)     
-        editMenu.addAction(importSettingsAction)     
+        # editMenu = mainMenu.addMenu("Presets")
+        # editMenu.addAction(exportSettingsAction)     
+        # editMenu.addAction(importSettingsAction)     
 
         helpAction = QtWidgets.QAction("Help",self)
         helpAction.triggered.connect(lambda: webbrowser.open('https://github.com/SweckEUW/Autodesk-Maya-AI-Image-Edit-Toolkit'))
