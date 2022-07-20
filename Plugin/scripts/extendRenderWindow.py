@@ -3,10 +3,11 @@ from shiboken2 import wrapInstance
 import maya.OpenMayaUI as mui
 import maya.cmds as cmds
 from PIL.ImageQt import ImageQt
-import sys,os
+import os
 import maya.app.general.createImageFormats as createImageFormats
 import maya.utils as utils
-
+import torch
+import gc
 
 from neural_style import neural_style
 from optionWindow import OptionWindow
@@ -43,8 +44,8 @@ def openOptionsWindow():
 
 def run_service(name):  
     # Display Loadingscreen
-    extended_renderview_image.setOverlayVisible(True)
-    extended_renderview_image.toggleLoadingscreen()
+    # extended_renderview_image.setOverlayVisible(True)
+    # extended_renderview_image.toggleLoadingscreen()
     QtCore.QCoreApplication.processEvents()
 
     # Save Rendering to disk
@@ -64,8 +65,14 @@ def run_service(name):
     
     # Display Image
     extended_renderview_image.set_Image(image)
+    extended_renderview_image.setOverlayVisible(True)
+    
+    # extended_renderview_image.toggleLoadingscreen()
 
-    extended_renderview_image.toggleLoadingscreen()
+    torch.cuda.empty_cache()
+    gc.collect()
+
+    print(torch.cuda.memory_summary(device=None, abbreviated=False))
 
 def saveImage():
     extended_renderview_image.saveImage()
@@ -91,7 +98,7 @@ class ExtendedRenderViewToolbar(QtWidgets.QWidget):
         self.styleTransferButton = QtWidgets.QPushButton()
         self.styleTransferButton.setIcon(QtGui.QIcon(QtGui.QPixmap("./Plugin/media/icons/style_transfer.svg")))
         self.styleTransferButton.setToolTip('Run Neural Style Transfer on Rendering')
-        self.styleTransferButton.clicked.connect(lambda:run_service("style_transfer"))
+        self.styleTransferButton.clicked.connect(lambda: run_service("style_transfer"))
         
         # Image Super-Resolution
         self.superResolutionButton = QtWidgets.QPushButton()
