@@ -207,6 +207,7 @@ class OptionWindow(QtWidgets.QDialog):
         itterations_slider.setMaximum(1500)
         itterations_slider.setValue(int(self.optionsJson["style_transfer"]["itterations"]))
         itterations_slider.setTickPosition(QtWidgets.QSlider.NoTicks)
+        itterations_slider.setObjectName("itterations_slider")
         itterations_slider.valueChanged.connect(lambda: (
             updateOptions("style_transfer","itterations",itterations_slider.value()),
             itterations_label.setText(str(itterations_slider.value()))
@@ -216,6 +217,7 @@ class OptionWindow(QtWidgets.QDialog):
         # Keep original colors
         keepcolor_checkbox = QtWidgets.QCheckBox()
         keepcolor_checkbox.setChecked(self.optionsJson["style_transfer"]["original_colors"] == "True")
+        keepcolor_checkbox.setObjectName("keepcolor_checkbox")
         keepcolor_checkbox.toggled.connect(lambda: ( 
             updateOptions("style_transfer","original_colors",str(keepcolor_checkbox.isChecked()))
         ))
