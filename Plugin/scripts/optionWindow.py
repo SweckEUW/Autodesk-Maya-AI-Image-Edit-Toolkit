@@ -406,9 +406,30 @@ class OptionWindowStyleImageSelection(QtWidgets.QWidget):
         if len(self.lineedits) == 2:
             self.button_container.addWidget(self.delete_button)
 
+    # Remove Layout from Layout
+    def clear_item(self,item):
+        if hasattr(item, "layout"):
+            if callable(item.layout):
+                layout = item.layout()
+        else:
+            layout = None
+
+        if hasattr(item, "widget"):
+            if callable(item.widget):
+                widget = item.widget()
+        else:
+            widget = None
+
+        if widget:
+            widget.setParent(None)
+        elif layout:
+            for i in reversed(range(layout.count())):
+                self.clear_item(layout.itemAt(i))
+
     def remove_style_image_widget(self):
         # Remove widget
-        self.style_widgets_layout.takeAt(0)
+        self.clear_item(self.style_widgets_layout.itemAt(self.style_widgets_layout.count()-1))
+        self.style_widgets_layout.itemAt(self.style_widgets_layout.count()-1).setParent(None)
 
         # Update options.json
         self.lineedits.pop(0)
