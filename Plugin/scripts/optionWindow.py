@@ -428,12 +428,12 @@ class OptionWindowStyleImageSelection(QtWidgets.QWidget):
 
     def remove_style_image_widget(self):
         # Remove widget
-        self.clear_item(self.style_widgets_layout.itemAt(self.style_widgets_layout.count()-1))
-        self.style_widgets_layout.itemAt(self.style_widgets_layout.count()-1).setParent(None)
+        self.clear_item(self.style_widgets_layout.itemAt(self.style_widgets_layout.count() - 1))
+        self.style_widgets_layout.itemAt(self.style_widgets_layout.count() - 1).setParent(None)
 
         # Update options.json
-        self.lineedits.pop(0)
-        self.sliders.pop(0)
+        self.lineedits.pop(len(self.lineedits) - 1)
+        self.sliders.pop(len(self.sliders) - 1)
         self.update_style_images()
 
         # Remove delete button 
