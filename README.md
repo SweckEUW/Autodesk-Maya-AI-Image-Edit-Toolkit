@@ -1,6 +1,10 @@
 # Autodesk-Maya-AI-Image-Edit-Toolkit
 Artificial intelligence powered image editing tool for Look Development inside Autodesk Maya
 
+More Information:
+https://simonweck.de/Work/AI-Image-Editor-Toolkit
+
+Developed in Maya 2023.1
 
 Installation:
 
